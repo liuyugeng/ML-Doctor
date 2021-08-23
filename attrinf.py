@@ -5,11 +5,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 
-from utils import *
-from opacus import PrivacyEngine
-from torch.optim import lr_scheduler
-from opacus.utils import module_modification
-from opacus.dp_model_inspector import DPModelInspector
+from utils.define_models import *
 from sklearn.metrics import f1_score, recall_score, precision_score, roc_auc_score
 
 
@@ -40,7 +36,7 @@ class attack_training():
     def init_attack_model(self, output_classes):
         x = torch.rand([1, 3, 64, 64]).to(self.device)
         input_classes = self.get_middle_output(x).flatten().shape[0]
-        self.attack_model = get_attack_model(inputs_classes=input_classes, outputs_classes=output_classes)
+        self.attack_model = attrinf_attack_model(inputs_classes=input_classes, outputs_classes=output_classes)
         self.attack_model.to(self.device)
         self.optimizer = optim.Adam(self.attack_model.parameters(), lr=1e-3)
 
@@ -114,3 +110,24 @@ class attack_training():
 
     def saveModel(self, path):
         torch.save(self.attack_model.state_dict(), path)
+
+def train_attack_model(TARGET_PATH, ATTACK_PATH, output_classes, device, target_model, train_loader, test_loader):
+    TARGET_PATH = TARGET_PATH
+    ATTACK_PATH = ATTACK_PATH + "attack_model.pth"
+
+    attack = attack_training(device, train_loader, test_loader, target_model, TARGET_PATH, ATTACK_PATH)
+    attack.init_attack_model(output_classes)
+
+    for epoch in range(100):
+        print("<======================= Epoch " + str(epoch+1) + " =======================>")
+        print("attack training")
+        acc_train = attack.train()
+        print("attack testing")
+        acc_test = attack.test()
+
+    attack.saveModel(ATTACK_PATH)
+    print("Saved Attack Model")
+    print("Finished!!!")
+
+
+    return acc_train, acc_test

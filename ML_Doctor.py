@@ -1,18 +1,7 @@
 import os
 import sys
-import time
-import glob
 import torch
-import random
-import pickle
 import argparse
-import torchvision
-import numpy as np
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
-import torchvision.transforms as transforms
 
 from meminf import *
 from attrinf import *
@@ -21,14 +10,13 @@ from utils.define_models import *
 
 
 def meminf():
-    
+    pass
 
 def modinv():
     pass
 
 def attrinf():
-    target_trainloader = 
-    target_testloader = 
+    pass
 
 def modsteal():
     pass
@@ -36,11 +24,19 @@ def modsteal():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-	parser.add_argument('-g', '--gpu', type=str, default="1", 
+    parser.add_argument('-g', '--gpu', type=str, default="1", 
                         help='Choose GPU')
 
     parser.add_argument('-a', '--attack', type=int, default="0", 
-                        help='Choose attack type and we have 4 attacks, 0: membership inference, 1: model inversion 2: attribute inference, 3: model stealing')
+                        help='Choose attack and we have 4 attacks\
+                        0: membership inference, 1: model inversion 2: attribute inference, 3: model stealing')
+
+    parser.add_argument('-t', '--type', type=int, default="0", 
+                        help='Choose attack type and we have different attack types\
+                        for membership inference, we have 4 types\
+                        for model inversion, we have 2 types\
+                        for attribute inference, we have 2 types\
+                        for model stealing, we have 2 types')
 
 
     args = parser.parse_args()
@@ -60,7 +56,7 @@ if __name__ == "__main__":
     elif attack == 2:
         attrinf()
 
-    elif attack = 3:
+    elif attack == 3:
         modsteal()
 
     else:
