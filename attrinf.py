@@ -1,9 +1,6 @@
 import torch
-import pickle
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
 
 from utils.define_models import *
 from sklearn.metrics import f1_score, recall_score, precision_score, roc_auc_score
@@ -33,8 +30,8 @@ class attack_training():
             activation[name] = output.detach()
         return hook
 
-    def init_attack_model(self, output_classes):
-        x = torch.rand([1, 3, 64, 64]).to(self.device)
+    def init_attack_model(self, size, output_classes):
+        x = torch.rand(size).to(self.device)
         input_classes = self.get_middle_output(x).flatten().shape[0]
         self.attack_model = attrinf_attack_model(inputs_classes=input_classes, outputs_classes=output_classes)
         self.attack_model.to(self.device)

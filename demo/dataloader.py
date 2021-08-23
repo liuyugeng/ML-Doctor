@@ -1,5 +1,4 @@
 import os
-import sys
 import torch
 import pandas
 import torchvision
@@ -8,7 +7,6 @@ import torch.nn as nn
 import PIL.Image as Image
 import torchvision.transforms as transforms
 
-from tqdm import tqdm
 from functools import partial
 from typing import Any, Callable, List, Optional, Union, Tuple
 
@@ -22,12 +20,15 @@ class CNN(nn.Module):
             nn.Conv2d(32, 64, kernel_size=3),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(64, 128, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
         )
 
         self.classifier = nn.Sequential(
-            nn.Linear(64 * 6 * 6, 128),
-            nn.ReLU(inplace=True),
-            nn.Linear(128, num_classes),
+            nn.Linear(128*6*6, 512),
+            nn.ReLU(),
+            nn.Linear(512, num_classes),
         )
 
 
@@ -218,9 +219,8 @@ def get_model_dataset(dataset_name, attr):
         ])
 
         dataset = UTKFaceDataset(root=root, attr=attr, transform=transform)
+        input_channel = 3
         
-        
-
     elif dataset_name == "celeba":
         if isinstance(attr, list):
             for a in attr:
@@ -245,11 +245,12 @@ def get_model_dataset(dataset_name, attr):
         ])
 
         dataset = CelebA(root=root, attr_list=attr_list, target_type=attr, transform=transform)
+        input_channel = 3
 
     elif dataset_name == "stl10":
         num_classes = 10
         transform = transforms.Compose([
-            transforms.Resize((32, 32)),
+            transforms.Resize((64, 64)),
             transforms.ToTensor(),
             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
@@ -261,11 +262,12 @@ def get_model_dataset(dataset_name, attr):
                 root=root, split='test', transform=transform, download=True)
 
         dataset = train_set + test_set
+        input_channel = 3
 
     elif dataset_name == "FMNIST":
         num_classes = 10
         transform = transforms.Compose([
-            transforms.Resize((32, 32)),
+            transforms.Resize((64, 64)),
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
         ])
@@ -276,13 +278,14 @@ def get_model_dataset(dataset_name, attr):
                 root=root, train=False, download=True, transform=transform)
 
         dataset = train_set + test_set
+        input_channel = 1
 
     if isinstance(num_classes, int):
-        target_model = CNN(num_classes=num_classes)
-        shadow_model = CNN(num_classes=num_classes)
+        target_model = CNN(input_channel=input_channel, num_classes=num_classes)
+        shadow_model = CNN(input_channel=input_channel, num_classes=num_classes)
     else:
-        target_model = CNN(num_classes=num_classes[0])
-        shadow_model = CNN(num_classes=num_classes[0])
+        target_model = CNN(input_channel=input_channel, num_classes=num_classes[0])
+        shadow_model = CNN(input_channel=input_channel, num_classes=num_classes[0])
 
 
     return num_classes, dataset, target_model, shadow_model

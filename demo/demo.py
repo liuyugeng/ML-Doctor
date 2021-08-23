@@ -1,12 +1,5 @@
 import os
-import sys
-import time
 import torch
-import random
-import torchvision
-import torch.nn as nn
-import torch.nn.functional as F
-import torchvision.transforms as transforms
 
 from train import *
 from dataloader import *
@@ -16,7 +9,7 @@ def train_model(PATH, device, model, train_loader, test_loader, num_classes):
     acc_train = 0
     acc_test = 0
 
-    for i in range(300):
+    for i in range(100):
         print("<======================= Epoch " + str(i+1) + " =======================>")
         print("target training")
 
@@ -27,7 +20,7 @@ def train_model(PATH, device, model, train_loader, test_loader, num_classes):
         overfitting = round(acc_train - acc_test, 6)
         print('The overfitting rate is %s' % overfitting)
 
-    filename = "target.pth"
+    filename = "UTKFace_target.pth"
     FILE_PATH = PATH + filename
     model.saveModel(FILE_PATH)
     print("Saved target model!!!")
@@ -36,7 +29,7 @@ def train_model(PATH, device, model, train_loader, test_loader, num_classes):
     return acc_train, acc_test, overfitting
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = torch.device("cuda:0")
 
     num_classes, target_trainloader, target_testloader, shadow_trainloader, shadow_testloader, target_model, shadow_model = prepare_dataset("UTKFace", "race")

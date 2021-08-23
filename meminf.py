@@ -1,28 +1,31 @@
 import os
-import sys
-import time
 import glob
 import torch
-import random
 import pickle
-import torchvision
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 np.set_printoptions(threshold=np.inf)
-import torchvision.transforms as transforms
 
-from tqdm import tqdm
 from opacus import PrivacyEngine
 from torch.optim import lr_scheduler
 from opacus.utils import module_modification
+from sklearn.metrics import f1_score, roc_auc_score
 from opacus.dp_model_inspector import DPModelInspector
-from sklearn.metrics import f1_score, recall_score, precision_score, roc_auc_score
+
+
+def weights_init(m):
+	if isinstance(m, nn.Conv2d):
+		nn.init.normal_(m.weight.data)
+		m.bias.data.fill_(0)
+	elif isinstance(m,nn.Linear):
+		nn.init.xavier_normal_(m.weight)
+		nn.init.constant_(m.bias, 0)
 
 class shadow_model_training():
-    def __init__(self, trainloader, testloader, model, device, use_DP, num_classes, noise, norm, batch_size):
+    def __init__(self, trainloader, testloader, model, device, use_DP, num_classes, noise, norm, batch_size, loss, optimizer):
         self.use_DP = use_DP
         self.device = device
         self.net = model.to(self.device)
@@ -30,8 +33,8 @@ class shadow_model_training():
         self.testloader = testloader
 
         self.num_classes = num_classes
-        self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.SGD(self.net.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-4)
+        self.criterion = loss
+        self.optimizer = optimizer
 
         self.noise_multiplier, self.max_grad_norm = noise, norm
         
@@ -117,7 +120,7 @@ class shadow_model_training():
 
 
 class distillation_training():
-    def __init__(self, PATH, trainloader, testloader, model, teacher, device):
+    def __init__(self, PATH, trainloader, testloader, model, teacher, device, optimizer, T, alpha):
         self.device = device
         self.model = model.to(self.device)
         self.trainloader = trainloader
@@ -129,9 +132,12 @@ class distillation_training():
         self.teacher.eval()
 
         self.criterion = nn.KLDivLoss(reduction='batchmean')
-        self.optimizer = optim.SGD(self.model.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-4)
+        self.optimizer = optimizer
 
         self.scheduler = lr_scheduler.MultiStepLR(self.optimizer, [50, 100], 0.1)
+
+        self.T = T
+        self.alpha = alpha
 
     def distillation_loss(self, y, labels, teacher_scores, T, alpha):
         loss = self.criterion(F.log_softmax(y/T, dim=1), F.softmax(teacher_scores/T, dim=1))
@@ -151,7 +157,7 @@ class distillation_training():
             teacher_output = self.teacher(inputs)
             teacher_output = teacher_output.detach()
     
-            loss = self.distillation_loss(outputs, targets, teacher_output, T=2.0, alpha=0.95)
+            loss = self.distillation_loss(outputs, targets, teacher_output, T=self.T, alpha=self.alpha)
             loss.backward()
             self.optimizer.step()
 
@@ -187,7 +193,7 @@ class distillation_training():
         return 1.*correct/total
 
 class attack_for_blackbox():
-    def __init__(self, SHADOW_PATH, TARGET_PATH, ATTACK_SETS, attack_train_loader, attack_test_loader, target_model, shadow_model, attack_model, device, r):
+    def __init__(self, SHADOW_PATH, TARGET_PATH, ATTACK_SETS, attack_train_loader, attack_test_loader, target_model, shadow_model, attack_model, device):
         self.device = device
 
         self.TARGET_PATH = TARGET_PATH
@@ -207,7 +213,7 @@ class attack_for_blackbox():
         self.attack_test_loader = attack_test_loader
 
         self.attack_model = attack_model.to(self.device)
-        torch.manual_seed(r)
+        torch.manual_seed(0)
         self.attack_model.apply(weights_init)
 
         if self.device == 'cuda':
@@ -388,7 +394,7 @@ class attack_for_blackbox():
         torch.save(self.attack_model.state_dict(), path)
 
 class attack_for_whitebox():
-    def __init__(self, TARGET_PATH, SHADOW_PATH, ATTACK_SETS, attack_train_loader, attack_test_loader, target_model, shadow_model, attack_model, device, class_num, r):
+    def __init__(self, TARGET_PATH, SHADOW_PATH, ATTACK_SETS, attack_train_loader, attack_test_loader, target_model, shadow_model, attack_model, device, class_num):
         self.device = device
         self.class_num = class_num
 
@@ -409,7 +415,7 @@ class attack_for_whitebox():
         self.attack_test_loader = attack_test_loader
 
         self.attack_model = attack_model.to(self.device)
-        torch.manual_seed(r)
+        torch.manual_seed(0)
         self.attack_model.apply(weights_init)
 
         if self.device == 'cuda':
@@ -614,17 +620,17 @@ class attack_for_whitebox():
         torch.save(self.attack_model.state_dict(), path)
 
 
-def train_model(PATH, device, model, train_loader, test_loader, use_DP, loss, optimizer, num_classes, checkpoint, noise, norm, status):
+def train_model(PATH, device, target_model, train_loader, test_loader, use_DP, num_classes, noise, norm):
     model = shadow_model_training(train_loader, test_loader, target_model, device, use_DP, num_classes, noise, norm)
     acc_train = 0
     acc_test = 0
 
-    for i in range(300):
+    for i in range(100):
         print("<======================= Epoch " + str(i+1) + " =======================>")
-        print(status + " training")
+        print("shadow training")
 
         acc_train = model.train()
-        print(status + " testing")
+        print("shadow testing")
         acc_test = model.test()
 
 
@@ -632,26 +638,22 @@ def train_model(PATH, device, model, train_loader, test_loader, use_DP, loss, op
 
         print('The overfitting rate is %s' % overfitting)
 
-        if i+1 in checkpoint:
-            filename = status + "_epoch_" + str(i+1) + "_" + loss + "_" + optimizer + ".pth"
-            FILE_PATH = PATH + filename
-            model.saveModel(FILE_PATH)
-            print("saved " + status + " model!!!")
-
+    FILE_PATH = PATH + "shadow.pth"
+    model.saveModel(FILE_PATH)
+    print("saved shadow model!!!")
     print("Finished training!!!")
 
     return acc_train, acc_test, overfitting
 
-def train_distillation(MODEL_PATH, DL_PATH, device, model, student_model, train_loader, test_loader, loss, optimizer, status):
-    MODEL_PATH = MODEL_PATH + status + "_epoch_300_" + loss + "_" + optimizer + ".pth"
+def train_distillation(MODEL_PATH, DL_PATH, device, target_model, student_model, train_loader, test_loader):
     distillation = distillation_training(MODEL_PATH, train_loader, test_loader, student_model, target_model, device)
 
-    for i in range(300):
+    for i in range(100):
         print("<======================= Epoch " + str(i+1) + " =======================>")
-        print(status + " distillation training")
+        print("shadow distillation training")
 
         acc_distillation_train = distillation.train()
-        print(status + " distillation testing")
+        print("shadow distillation testing")
         acc_distillation_test = distillation.test()
 
 
@@ -660,10 +662,141 @@ def train_distillation(MODEL_PATH, DL_PATH, device, model, student_model, train_
         print('The overfitting rate is %s' % overfitting)
 
         
-    result_path = DL_PATH + status + "_epoch_300" + "_" + loss + "_" + optimizer + ".pth"
+    result_path = DL_PATH + "shadow.pth"
 
     distillation.saveModel(result_path)
-    print("saved " + status + " model!!!")
+    print("Saved shadow model!!!")
     print("Finished training!!!")
 
     return acc_distillation_train, acc_distillation_test, overfitting
+
+def get_attack_dataset_with_shadow(target_train, target_test, shadow_train, shadow_test, batch_size):
+	mem_train, non_mem_train, mem_test, non_mem_test = list(shadow_train), list(shadow_test), list(target_train), list(target_test)
+
+	for i in range(len(mem_train)):
+		mem_train[i] = mem_train[i] + (1,)
+		non_mem_train[i] = non_mem_train[i] + (0,)
+		non_mem_test[i] = non_mem_test[i] + (0,)
+		mem_test[i] = mem_test[i] + (1,)
+
+	attack_train = mem_train + non_mem_train
+	attack_test = mem_test + non_mem_test
+	
+	attack_trainloader = torch.utils.data.DataLoader(
+		attack_train, batch_size=batch_size, shuffle=True, num_workers=2)
+	attack_testloader = torch.utils.data.DataLoader(
+		attack_test, batch_size=batch_size, shuffle=True, num_workers=2)
+
+	return attack_trainloader, attack_testloader
+
+def get_attack_dataset_without_shadow(train_set, test_set, batch_size):
+	each_length = len(train_set)//3
+	mem_train, mem_test, _ = torch.utils.data.random_split(train_set, [each_length, each_length, len(train_set)-(each_length*2)])
+	non_mem_train, non_mem_test, _ = torch.utils.data.random_split(test_set, [each_length, each_length, len(test_set)-(each_length*2)])
+
+	# get_dataset(num_classes, mem_train, mem_test, non_mem_train, non_mem_test)
+
+	mem_train, mem_test, non_mem_train, non_mem_test = list(mem_train), list(mem_test), list(non_mem_train), list(non_mem_test)
+
+	for i in range(each_length):
+		mem_train[i] = mem_train[i] + (1,)
+		non_mem_train[i] = non_mem_train[i] + (0,)
+
+		mem_test[i] = mem_test[i] + (1,)
+		non_mem_test[i] = non_mem_test[i] + (0,)
+
+	attack_train = mem_train + non_mem_train
+	attack_test = mem_test + non_mem_test
+
+	attack_trainloader = torch.utils.data.DataLoader(
+		attack_train, batch_size=batch_size, shuffle=True, num_workers=2)
+	attack_testloader = torch.utils.data.DataLoader(
+		attack_test, batch_size=batch_size, shuffle=True, num_workers=2)
+
+	return attack_trainloader, attack_testloader
+
+
+def attack_mode0(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, get_attack_set):
+	MODELS_PATH = ATTACK_PATH + "attack0.pth"
+	RESULT_PATH = ATTACK_PATH + "attack0.p"
+	ATTACK_SETS = TARGET_PATH + "attack_mode0_"
+
+
+	attack = attack_for_blackbox(SHADOW_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device)
+
+	if get_attack_set:
+		# attack.delete_pickle()
+		attack.prepare_dataset()
+
+	for i in range(50):
+		print("Epoch %d :" % (i+1))
+		res_train = attack.train(i, RESULT_PATH)
+		res_test = attack.test(i, RESULT_PATH)
+
+	attack.saveModel(MODELS_PATH)
+	print("Saved Attack Model")
+
+	return res_train, res_test
+
+def attack_mode1(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, get_attack_set):
+	MODELS_PATH = ATTACK_PATH + "attack1.pth"
+	RESULT_PATH = ATTACK_PATH + "attack1.p"
+	ATTACK_SETS = TARGET_PATH + "attack_mode1_"
+
+	attack = attack_for_blackbox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device)
+
+	if get_attack_set:
+		# attack.delete_pickle()
+		attack.prepare_dataset()
+
+	for i in range(50):
+		print("Epoch %d :" % (i+1))
+		res_train = attack.train(i, RESULT_PATH)
+		res_test = attack.test(i, RESULT_PATH)
+
+	attack.saveModel(MODELS_PATH)
+	print("Saved Attack Model")
+
+	return res_train, res_test
+
+def attack_mode2(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, get_attack_set, num_classes):
+	MODELS_PATH = ATTACK_PATH + "attack2.pth"
+	RESULT_PATH = ATTACK_PATH + "attack2.p"
+	ATTACK_SETS = TARGET_PATH + "attack_mode2_"
+
+	attack = attack_for_whitebox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device, num_classes)
+	
+	if get_attack_set:
+		# attack.delete_pickle()
+		attack.prepare_dataset()
+
+	for i in range(50):
+		print("Epoch %d :" % (i+1))
+		res_train = attack.train(i, RESULT_PATH)
+		res_test = attack.test(i, RESULT_PATH)
+
+	attack.saveModel(MODELS_PATH)
+	print("Saved Attack Model")
+
+	return res_train, res_test
+
+def attack_mode3(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, get_attack_set, num_classes):
+	MODELS_PATH = ATTACK_PATH + "attack3.pth"
+	RESULT_PATH = ATTACK_PATH + "attack3.p"
+	ATTACK_SETS = TARGET_PATH + "attack_mode3_"
+
+	attack = attack_for_whitebox(TARGET_PATH, SHADOW_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device, num_classes)
+	
+	if get_attack_set:
+		# attack.delete_pickle()
+		attack.prepare_dataset()
+
+	for i in range(50):
+		print("Epoch %d :" % (i+1))
+		res_train = attack.train(i, RESULT_PATH)
+		res_test = attack.test(i, RESULT_PATH)
+
+	attack.saveModel(MODELS_PATH)
+	print("Saved Attack Model")
+
+	return res_train, res_test
