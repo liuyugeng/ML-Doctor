@@ -612,3 +612,58 @@ class attack_for_whitebox():
 
 	def saveModel(self, path):
 		torch.save(self.attack_model.state_dict(), path)
+
+
+def train_model(PATH, device, model, train_loader, test_loader, use_DP, loss, optimizer, num_classes, checkpoint, noise, norm, status):
+	model = shadow_model_training(train_loader, test_loader, target_model, device, use_DP, num_classes, noise, norm)
+	acc_train = 0
+	acc_test = 0
+
+	for i in range(300):
+		print("<======================= Epoch " + str(i+1) + " =======================>")
+		print(status + " training")
+
+		acc_train = model.train()
+		print(status + " testing")
+		acc_test = model.test()
+
+
+		overfitting = round(acc_train - acc_test, 6)
+
+		print('The overfitting rate is %s' % overfitting)
+
+		if i+1 in checkpoint:
+			filename = status + "_epoch_" + str(i+1) + "_" + loss + "_" + optimizer + ".pth"
+			FILE_PATH = PATH + filename
+			model.saveModel(FILE_PATH)
+			print("saved " + status + " model!!!")
+
+	print("Finished training!!!")
+
+	return acc_train, acc_test, overfitting
+
+def train_distillation(MODEL_PATH, DL_PATH, device, model, student_model, train_loader, test_loader, loss, optimizer, status):
+	MODEL_PATH = MODEL_PATH + status + "_epoch_300_" + loss + "_" + optimizer + ".pth"
+	distillation = distillation_training(MODEL_PATH, train_loader, test_loader, student_model, target_model, device)
+
+	for i in range(300):
+		print("<======================= Epoch " + str(i+1) + " =======================>")
+		print(status + " distillation training")
+
+		acc_distillation_train = distillation.train()
+		print(status + " distillation testing")
+		acc_distillation_test = distillation.test()
+
+
+		overfitting = round(acc_distillation_train - acc_distillation_test, 6)
+
+		print('The overfitting rate is %s' % overfitting)
+
+		
+	result_path = DL_PATH + status + "_epoch_300" + "_" + loss + "_" + optimizer + ".pth"
+
+	distillation.saveModel(result_path)
+	print("saved " + status + " model!!!")
+	print("Finished training!!!")
+
+	return acc_distillation_train, acc_distillation_test, overfitting
