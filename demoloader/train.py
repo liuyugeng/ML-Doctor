@@ -67,9 +67,12 @@ class model_training():
 		total = 0
 		
 		for batch_idx, (inputs, targets) in enumerate(self.trainloader):
+			if isinstance(targets, list):
+				targets = targets[0]
+
 			if str(self.criterion) != "CrossEntropyLoss()":
 				targets = torch.from_numpy(np.eye(self.num_classes)[targets]).float()
-
+			 
 			inputs, targets = inputs.to(self.device), targets.to(self.device)
 			self.optimizer.zero_grad()
 			outputs = self.net(inputs)
@@ -110,6 +113,8 @@ class model_training():
 		total = 0
 		with torch.no_grad():
 			for inputs, targets in self.testloader:
+				if isinstance(targets, list):
+					targets = targets[0]
 				if str(self.criterion) != "CrossEntropyLoss()":
 					targets = torch.from_numpy(np.eye(self.num_classes)[targets]).float()
 

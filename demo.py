@@ -5,12 +5,18 @@ import torch.nn as nn
 import torch.optim as optim
 
 from doctor.meminf import *
+from doctor.attrinf import *
 from demoloader.train import *
 from utils.define_models import *
 from demoloader.dataloader import *
 
 
-def train_model(PATH, device, model, train_loader, test_loader):
+def train_model(PATH, device, model, train_set, test_set, name):
+    train_loader = torch.utils.data.DataLoader(
+        train_set, batch_size=64, shuffle=True, num_workers=2)
+    test_loader = torch.utils.data.DataLoader(
+        test_set, batch_size=64, shuffle=True, num_workers=2)
+    
     model = model_training(train_loader, test_loader, model, device, 0, 0, 0)
     acc_train = 0
     acc_test = 0
@@ -26,7 +32,7 @@ def train_model(PATH, device, model, train_loader, test_loader):
         overfitting = round(acc_train - acc_test, 6)
         print('The overfitting rate is %s' % overfitting)
 
-    filename = "UTKFace_target.pth"
+    filename = name + "_target.pth"
     FILE_PATH = PATH + filename
     model.saveModel(FILE_PATH)
     print("Saved target model!!!")
@@ -85,15 +91,21 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = torch.device("cuda:0")
 
+    TARGET_PATH = "./demoloader/trained_model/"
+
     name = "UTKFace"
     attr = ["race", "gender"]
     root = "../data"
 
     num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(name, attr, root)
+
+    # train_model(TARGET_PATH, device, target_model, target_train, target_test, name)
     # test_meminf(num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
 
+    
     attack_length = int(0.5 * len(target_train))
     rest = len(target_train) - attack_length
+    attack_model = attrinf_attack_model()
 
     attack_train, _ = torch.utils.data.random_split(target_train, [attack_length, rest])
     attack_test = target_test
@@ -103,10 +115,7 @@ if __name__ == "__main__":
     attack_testloader = torch.utils.data.DataLoader(
         attack_test, batch_size=64, shuffle=True, num_workers=2)
 
-    if num_classes[1] == 2:
-        dataset_type = "binary"
-        
-    else:
-        dataset_type = "macro"
+    image_size = [1] + list(target_train[0][0].shape)
+    train_attack_model(TARGET_PATH + name + "_target.pth", TARGET_PATH, num_classes[1], device, target_model, attack_trainloader, attack_testloader, image_size, attack_model)
 
     
