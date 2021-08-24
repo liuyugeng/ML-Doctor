@@ -172,22 +172,12 @@ def prepare_dataset(dataset, attr, root):
     length = len(dataset)
     each_length = length//4
     target_train, target_test, shadow_train, shadow_test, _ = torch.utils.data.random_split(dataset, [each_length, each_length, each_length, each_length, len(dataset)-(each_length*4)])
-
-    target_trainloader = torch.utils.data.DataLoader(
-        target_train, batch_size=64, shuffle=True, num_workers=2)
-    target_testloader = torch.utils.data.DataLoader(
-        target_test, batch_size=64, shuffle=True, num_workers=2)
-
-    shadow_trainloader = torch.utils.data.DataLoader(
-        shadow_train, batch_size=64, shuffle=True, num_workers=2)
-    shadow_testloader = torch.utils.data.DataLoader(
-        shadow_test, batch_size=64, shuffle=True, num_workers=2)
     
-    return num_classes, target_trainloader, target_testloader, shadow_trainloader, shadow_testloader, target_model, shadow_model
+    return num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model
 
 
 def get_model_dataset(dataset_name, attr, root):
-    if dataset_name == "UTKFace":
+    if dataset_name.lower() == "utkface":
         if isinstance(attr, list):
             num_classes = []
             for a in attr:
@@ -219,7 +209,7 @@ def get_model_dataset(dataset_name, attr, root):
         dataset = UTKFaceDataset(root=root, attr=attr, transform=transform)
         input_channel = 3
         
-    elif dataset_name == "celeba":
+    elif dataset_name.lower() == "celeba":
         if isinstance(attr, list):
             for a in attr:
                 if a != "attr":
@@ -245,7 +235,7 @@ def get_model_dataset(dataset_name, attr, root):
         dataset = CelebA(root=root, attr_list=attr_list, target_type=attr, transform=transform)
         input_channel = 3
 
-    elif dataset_name == "stl10":
+    elif dataset_name.lower() == "stl10":
         num_classes = 10
         transform = transforms.Compose([
             transforms.Resize((64, 64)),
@@ -262,7 +252,7 @@ def get_model_dataset(dataset_name, attr, root):
         dataset = train_set + test_set
         input_channel = 3
 
-    elif dataset_name == "FMNIST":
+    elif dataset_name.lower() == "fmnist":
         num_classes = 10
         transform = transforms.Compose([
             transforms.Resize((64, 64)),

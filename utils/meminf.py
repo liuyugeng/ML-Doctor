@@ -669,24 +669,24 @@ def train_distillation(MODEL_PATH, DL_PATH, device, target_model, student_model,
 
     return acc_distillation_train, acc_distillation_test, overfitting
 
-def get_attack_dataset_without_shadow(train_loader, test_loader, batch_size):
-    member = []
-    nonmember = []
-    for inputs, targets in train_loader:
-        for _input, _target in zip(inputs, targets):
-            member.append((_input, _target, 1))
+def get_attack_dataset_without_shadow(train_set, test_set, batch_size):
+    mem_length = len(train_set)//3
+    nonmem_length = len(test_set)//3
+    mem_train, mem_test, _ = torch.utils.data.random_split(train_set, [mem_length, mem_length, len(train_set)-(mem_length*2)])
+    nonmem_train, nonmem_test, _ = torch.utils.data.random_split(test_set, [nonmem_length, nonmem_length, len(test_set)-(nonmem_length*2)])
+    mem_train, mem_test, nonmem_train, nonmem_test = list(mem_train), list(mem_test), list(nonmem_train), list(nonmem_test)
 
-    for inputs, targets in test_loader:
-        for _input, _target in zip(inputs, targets):
-            nonmember.append((_input, _target, 0))
-    
-    mem_length = len(member)//3
-    nonmem_length = len(nonmember)//3
-    mem_train, mem_test, _ = torch.utils.data.random_split(member, [mem_length, mem_length, len(member)-(mem_length*2)])
-    non_mem_train, non_mem_test, _ = torch.utils.data.random_split(nonmember, [nonmem_length, nonmem_length, len(nonmember)-(nonmem_length*2)])
-
-    attack_train = mem_train + non_mem_train
-    attack_test = mem_test + non_mem_test
+    for i in range(len(mem_train)):
+        mem_train[i] = mem_train[i] + (1,)
+    for i in range(len(nonmem_train)):
+        nonmem_train[i] = nonmem_train[i] + (0,)
+    for i in range(len(nonmem_test)):
+        nonmem_test[i] = nonmem_test[i] + (0,)
+    for i in range(len(mem_test)):
+        mem_test[i] = mem_test[i] + (1,)
+        
+    attack_train = mem_train + nonmem_train
+    attack_test = mem_test + nonmem_test
 
     attack_trainloader = torch.utils.data.DataLoader(
         attack_train, batch_size=batch_size, shuffle=True, num_workers=2)
@@ -695,40 +695,26 @@ def get_attack_dataset_without_shadow(train_loader, test_loader, batch_size):
 
     return attack_trainloader, attack_testloader
 
-def get_attack_dataset_with_shadow(target_train_loader, target_test_loader, shadow_train_loader, shadow_test_loader, batch_size):
-    member_train = []
-    nonmember_train = []
-    member_test = []
-    nonmember_test = []
+def get_attack_dataset_with_shadow(target_train, target_test, shadow_train, shadow_test, batch_size):
+    mem_train, nonmem_train, mem_test, nonmem_test = list(shadow_train), list(shadow_test), list(target_train), list(target_test)
 
-    for inputs, targets in shadow_train_loader:
-        for _input, _target in zip(inputs, targets):
-            member_train.append((_input, _target, 1))
+    for i in range(len(mem_train)):
+        mem_train[i] = mem_train[i] + (1,)
+    for i in range(len(nonmem_train)):
+        nonmem_train[i] = nonmem_train[i] + (0,)
+    for i in range(len(nonmem_test)):
+        nonmem_test[i] = nonmem_test[i] + (0,)
+    for i in range(len(mem_test)):
+        mem_test[i] = mem_test[i] + (1,)
 
-    for inputs, targets in shadow_test_loader:
-        for _input, _target in zip(inputs, targets):
-            nonmember_train.append((_input, _target, 0))
 
-    for inputs, targets in target_train_loader:
-        for _input, _target in zip(inputs, targets):
-            member_test.append((_input, _target, 1))
+    train_length = min(len(mem_train), len(nonmem_train))
+    test_length = min(len(mem_test), len(nonmem_test))
 
-    for inputs, targets in target_test_loader:
-        for _input, _target in zip(inputs, targets):
-            nonmember_test.append((_input, _target, 0))
-    
-    mem_train_length = len(member_train)//3
-    nonmem_train_length = len(nonmember_train)//3
-    mem_test_length = len(member_test)//3
-    nonmem_test_length = len(nonmember_test)//3
-
-    train_length = min(mem_train_length, nonmem_train_length)
-    test_length = min(mem_test_length, nonmem_test_length)
-
-    mem_train, _ = torch.utils.data.random_split(member_train, [train_length, len(member_train) - train_length])
-    non_mem_train, _ = torch.utils.data.random_split(nonmember_train, [train_length, len(nonmember_train) - train_length])
-    mem_test, _ = torch.utils.data.random_split(member_test, [test_length, len(member_test) - test_length])
-    non_mem_test, _ = torch.utils.data.random_split(nonmember_test, [test_length, len(nonmember_test) - test_length])
+    mem_train, _ = torch.utils.data.random_split(mem_train, [train_length, len(mem_train) - train_length])
+    non_mem_train, _ = torch.utils.data.random_split(nonmem_train, [train_length, len(nonmem_train) - train_length])
+    mem_test, _ = torch.utils.data.random_split(mem_test, [test_length, len(mem_test) - test_length])
+    non_mem_test, _ = torch.utils.data.random_split(nonmem_test, [test_length, len(nonmem_test) - test_length])
     
     attack_train = mem_train + non_mem_train
     attack_test = mem_test + non_mem_test
@@ -792,7 +778,7 @@ def attack_mode2(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_te
     attack = attack_for_whitebox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device, num_classes)
     
     if get_attack_set:
-        # attack.delete_pickle()
+        attack.delete_pickle()
         attack.prepare_dataset()
 
     for i in range(50):
@@ -813,7 +799,7 @@ def attack_mode3(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainload
     attack = attack_for_whitebox(TARGET_PATH, SHADOW_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device, num_classes)
     
     if get_attack_set:
-        # attack.delete_pickle()
+        attack.delete_pickle()
         attack.prepare_dataset()
 
     for i in range(50):
@@ -827,10 +813,10 @@ def attack_mode3(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainload
     return res_train, res_test
 
 def get_gradient_size(model):
-	gradient_size = []
-	gradient_list = reversed(list(model.named_parameters()))
-	for name, parameter in gradient_list:
-		if 'weight' in name:
-			gradient_size.append(parameter.shape)
+    gradient_size = []
+    gradient_list = reversed(list(model.named_parameters()))
+    for name, parameter in gradient_list:
+        if 'weight' in name:
+            gradient_size.append(parameter.shape)
 
-	return gradient_size
+    return gradient_size
