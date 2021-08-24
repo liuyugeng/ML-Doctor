@@ -17,22 +17,21 @@ from opacus.dp_model_inspector import DPModelInspector
 
 
 def weights_init(m):
-	if isinstance(m, nn.Conv2d):
-		nn.init.normal_(m.weight.data)
-		m.bias.data.fill_(0)
-	elif isinstance(m,nn.Linear):
-		nn.init.xavier_normal_(m.weight)
-		nn.init.constant_(m.bias, 0)
+    if isinstance(m, nn.Conv2d):
+        nn.init.normal_(m.weight.data)
+        m.bias.data.fill_(0)
+    elif isinstance(m,nn.Linear):
+        nn.init.xavier_normal_(m.weight)
+        nn.init.constant_(m.bias, 0)
 
 class shadow_model_training():
-    def __init__(self, trainloader, testloader, model, device, use_DP, num_classes, noise, norm, batch_size, loss, optimizer):
+    def __init__(self, trainloader, testloader, model, device, use_DP, noise, norm, batch_size, loss, optimizer):
         self.use_DP = use_DP
         self.device = device
         self.net = model.to(self.device)
         self.trainloader = trainloader
         self.testloader = testloader
 
-        self.num_classes = num_classes
         self.criterion = loss
         self.optimizer = optimizer
 
@@ -64,7 +63,7 @@ class shadow_model_training():
         correct = 0
         total = 0
         
-        for batch_idx, (inputs, [targets, _]) in enumerate(self.trainloader):
+        for batch_idx, (inputs, targets) in enumerate(self.trainloader):
 
             inputs, targets = inputs.to(self.device), targets.to(self.device)
 
@@ -103,7 +102,7 @@ class shadow_model_training():
         correct = 0
         total = 0
         with torch.no_grad():
-            for inputs, [targets, _] in self.testloader:
+            for inputs, targets in self.testloader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.net(inputs)
 
@@ -670,133 +669,168 @@ def train_distillation(MODEL_PATH, DL_PATH, device, target_model, student_model,
 
     return acc_distillation_train, acc_distillation_test, overfitting
 
-def get_attack_dataset_with_shadow(target_train, target_test, shadow_train, shadow_test, batch_size):
-	mem_train, non_mem_train, mem_test, non_mem_test = list(shadow_train), list(shadow_test), list(target_train), list(target_test)
+def get_attack_dataset_without_shadow(train_loader, test_loader, batch_size):
+    member = []
+    nonmember = []
+    for inputs, targets in train_loader:
+        for _input, _target in zip(inputs, targets):
+            member.append((_input, _target, 1))
 
-	for i in range(len(mem_train)):
-		mem_train[i] = mem_train[i] + (1,)
-		non_mem_train[i] = non_mem_train[i] + (0,)
-		non_mem_test[i] = non_mem_test[i] + (0,)
-		mem_test[i] = mem_test[i] + (1,)
+    for inputs, targets in test_loader:
+        for _input, _target in zip(inputs, targets):
+            nonmember.append((_input, _target, 0))
+    
+    mem_length = len(member)//3
+    nonmem_length = len(nonmember)//3
+    mem_train, mem_test, _ = torch.utils.data.random_split(member, [mem_length, mem_length, len(member)-(mem_length*2)])
+    non_mem_train, non_mem_test, _ = torch.utils.data.random_split(nonmember, [nonmem_length, nonmem_length, len(nonmember)-(nonmem_length*2)])
 
-	attack_train = mem_train + non_mem_train
-	attack_test = mem_test + non_mem_test
-	
-	attack_trainloader = torch.utils.data.DataLoader(
-		attack_train, batch_size=batch_size, shuffle=True, num_workers=2)
-	attack_testloader = torch.utils.data.DataLoader(
-		attack_test, batch_size=batch_size, shuffle=True, num_workers=2)
+    attack_train = mem_train + non_mem_train
+    attack_test = mem_test + non_mem_test
 
-	return attack_trainloader, attack_testloader
+    attack_trainloader = torch.utils.data.DataLoader(
+        attack_train, batch_size=batch_size, shuffle=True, num_workers=2)
+    attack_testloader = torch.utils.data.DataLoader(
+        attack_test, batch_size=batch_size, shuffle=True, num_workers=2)
 
-def get_attack_dataset_without_shadow(train_set, test_set, batch_size):
-	each_length = len(train_set)//3
-	mem_train, mem_test, _ = torch.utils.data.random_split(train_set, [each_length, each_length, len(train_set)-(each_length*2)])
-	non_mem_train, non_mem_test, _ = torch.utils.data.random_split(test_set, [each_length, each_length, len(test_set)-(each_length*2)])
+    return attack_trainloader, attack_testloader
 
-	# get_dataset(num_classes, mem_train, mem_test, non_mem_train, non_mem_test)
+def get_attack_dataset_with_shadow(target_train_loader, target_test_loader, shadow_train_loader, shadow_test_loader, batch_size):
+    member_train = []
+    nonmember_train = []
+    member_test = []
+    nonmember_test = []
 
-	mem_train, mem_test, non_mem_train, non_mem_test = list(mem_train), list(mem_test), list(non_mem_train), list(non_mem_test)
+    for inputs, targets in shadow_train_loader:
+        for _input, _target in zip(inputs, targets):
+            member_train.append((_input, _target, 1))
 
-	for i in range(each_length):
-		mem_train[i] = mem_train[i] + (1,)
-		non_mem_train[i] = non_mem_train[i] + (0,)
+    for inputs, targets in shadow_test_loader:
+        for _input, _target in zip(inputs, targets):
+            nonmember_train.append((_input, _target, 0))
 
-		mem_test[i] = mem_test[i] + (1,)
-		non_mem_test[i] = non_mem_test[i] + (0,)
+    for inputs, targets in target_train_loader:
+        for _input, _target in zip(inputs, targets):
+            member_test.append((_input, _target, 1))
 
-	attack_train = mem_train + non_mem_train
-	attack_test = mem_test + non_mem_test
+    for inputs, targets in target_test_loader:
+        for _input, _target in zip(inputs, targets):
+            nonmember_test.append((_input, _target, 0))
+    
+    mem_train_length = len(member_train)//3
+    nonmem_train_length = len(nonmember_train)//3
+    mem_test_length = len(member_test)//3
+    nonmem_test_length = len(nonmember_test)//3
 
-	attack_trainloader = torch.utils.data.DataLoader(
-		attack_train, batch_size=batch_size, shuffle=True, num_workers=2)
-	attack_testloader = torch.utils.data.DataLoader(
-		attack_test, batch_size=batch_size, shuffle=True, num_workers=2)
+    train_length = min(mem_train_length, nonmem_train_length)
+    test_length = min(mem_test_length, nonmem_test_length)
 
-	return attack_trainloader, attack_testloader
+    mem_train, _ = torch.utils.data.random_split(member_train, [train_length, len(member_train) - train_length])
+    non_mem_train, _ = torch.utils.data.random_split(nonmember_train, [train_length, len(nonmember_train) - train_length])
+    mem_test, _ = torch.utils.data.random_split(member_test, [test_length, len(member_test) - test_length])
+    non_mem_test, _ = torch.utils.data.random_split(nonmember_test, [test_length, len(nonmember_test) - test_length])
+    
+    attack_train = mem_train + non_mem_train
+    attack_test = mem_test + non_mem_test
+
+    attack_trainloader = torch.utils.data.DataLoader(
+        attack_train, batch_size=batch_size, shuffle=True, num_workers=2)
+    attack_testloader = torch.utils.data.DataLoader(
+        attack_test, batch_size=batch_size, shuffle=True, num_workers=2)
+
+    return attack_trainloader, attack_testloader
 
 
-def attack_mode0(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, get_attack_set):
-	MODELS_PATH = ATTACK_PATH + "attack0.pth"
-	RESULT_PATH = ATTACK_PATH + "attack0.p"
-	ATTACK_SETS = TARGET_PATH + "attack_mode0_"
+def attack_mode0(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, get_attack_set, num_classes):
+    MODELS_PATH = ATTACK_PATH + "attack0.pth"
+    RESULT_PATH = ATTACK_PATH + "attack0.p"
+    ATTACK_SETS = TARGET_PATH + "attack_mode0_"
 
 
-	attack = attack_for_blackbox(SHADOW_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device)
+    attack = attack_for_blackbox(SHADOW_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device)
 
-	if get_attack_set:
-		# attack.delete_pickle()
-		attack.prepare_dataset()
+    if get_attack_set:
+        # attack.delete_pickle()
+        attack.prepare_dataset()
 
-	for i in range(50):
-		print("Epoch %d :" % (i+1))
-		res_train = attack.train(i, RESULT_PATH)
-		res_test = attack.test(i, RESULT_PATH)
+    for i in range(50):
+        print("Epoch %d :" % (i+1))
+        res_train = attack.train(i, RESULT_PATH)
+        res_test = attack.test(i, RESULT_PATH)
 
-	attack.saveModel(MODELS_PATH)
-	print("Saved Attack Model")
+    attack.saveModel(MODELS_PATH)
+    print("Saved Attack Model")
 
-	return res_train, res_test
+    return res_train, res_test
 
-def attack_mode1(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, get_attack_set):
-	MODELS_PATH = ATTACK_PATH + "attack1.pth"
-	RESULT_PATH = ATTACK_PATH + "attack1.p"
-	ATTACK_SETS = TARGET_PATH + "attack_mode1_"
+def attack_mode1(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, get_attack_set, num_classes):
+    MODELS_PATH = ATTACK_PATH + "attack1.pth"
+    RESULT_PATH = ATTACK_PATH + "attack1.p"
+    ATTACK_SETS = TARGET_PATH + "attack_mode1_"
 
-	attack = attack_for_blackbox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device)
+    attack = attack_for_blackbox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device)
 
-	if get_attack_set:
-		# attack.delete_pickle()
-		attack.prepare_dataset()
+    if get_attack_set:
+        # attack.delete_pickle()
+        attack.prepare_dataset()
 
-	for i in range(50):
-		print("Epoch %d :" % (i+1))
-		res_train = attack.train(i, RESULT_PATH)
-		res_test = attack.test(i, RESULT_PATH)
+    for i in range(50):
+        print("Epoch %d :" % (i+1))
+        res_train = attack.train(i, RESULT_PATH)
+        res_test = attack.test(i, RESULT_PATH)
 
-	attack.saveModel(MODELS_PATH)
-	print("Saved Attack Model")
+    attack.saveModel(MODELS_PATH)
+    print("Saved Attack Model")
 
-	return res_train, res_test
+    return res_train, res_test
 
 def attack_mode2(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, get_attack_set, num_classes):
-	MODELS_PATH = ATTACK_PATH + "attack2.pth"
-	RESULT_PATH = ATTACK_PATH + "attack2.p"
-	ATTACK_SETS = TARGET_PATH + "attack_mode2_"
+    MODELS_PATH = ATTACK_PATH + "attack2.pth"
+    RESULT_PATH = ATTACK_PATH + "attack2.p"
+    ATTACK_SETS = TARGET_PATH + "attack_mode2_"
 
-	attack = attack_for_whitebox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device, num_classes)
-	
-	if get_attack_set:
-		# attack.delete_pickle()
-		attack.prepare_dataset()
+    attack = attack_for_whitebox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device, num_classes)
+    
+    if get_attack_set:
+        # attack.delete_pickle()
+        attack.prepare_dataset()
 
-	for i in range(50):
-		print("Epoch %d :" % (i+1))
-		res_train = attack.train(i, RESULT_PATH)
-		res_test = attack.test(i, RESULT_PATH)
+    for i in range(50):
+        print("Epoch %d :" % (i+1))
+        res_train = attack.train(i, RESULT_PATH)
+        res_test = attack.test(i, RESULT_PATH)
 
-	attack.saveModel(MODELS_PATH)
-	print("Saved Attack Model")
+    attack.saveModel(MODELS_PATH)
+    print("Saved Attack Model")
 
-	return res_train, res_test
+    return res_train, res_test
 
 def attack_mode3(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, get_attack_set, num_classes):
-	MODELS_PATH = ATTACK_PATH + "attack3.pth"
-	RESULT_PATH = ATTACK_PATH + "attack3.p"
-	ATTACK_SETS = TARGET_PATH + "attack_mode3_"
+    MODELS_PATH = ATTACK_PATH + "attack3.pth"
+    RESULT_PATH = ATTACK_PATH + "attack3.p"
+    ATTACK_SETS = TARGET_PATH + "attack_mode3_"
 
-	attack = attack_for_whitebox(TARGET_PATH, SHADOW_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device, num_classes)
-	
-	if get_attack_set:
-		# attack.delete_pickle()
-		attack.prepare_dataset()
+    attack = attack_for_whitebox(TARGET_PATH, SHADOW_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device, num_classes)
+    
+    if get_attack_set:
+        # attack.delete_pickle()
+        attack.prepare_dataset()
 
-	for i in range(50):
-		print("Epoch %d :" % (i+1))
-		res_train = attack.train(i, RESULT_PATH)
-		res_test = attack.test(i, RESULT_PATH)
+    for i in range(50):
+        print("Epoch %d :" % (i+1))
+        res_train = attack.train(i, RESULT_PATH)
+        res_test = attack.test(i, RESULT_PATH)
 
-	attack.saveModel(MODELS_PATH)
-	print("Saved Attack Model")
+    attack.saveModel(MODELS_PATH)
+    print("Saved Attack Model")
 
-	return res_train, res_test
+    return res_train, res_test
+
+def get_gradient_size(model):
+	gradient_size = []
+	gradient_list = reversed(list(model.named_parameters()))
+	for name, parameter in gradient_list:
+		if 'weight' in name:
+			gradient_size.append(parameter.shape)
+
+	return gradient_size
