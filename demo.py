@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from meminf import *
+from utils.meminf import *
 from demoloader.train import *
 from utils.define_models import *
 from demoloader.dataloader import *
