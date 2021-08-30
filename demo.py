@@ -55,27 +55,8 @@ def test_meminf(num_classes, target_train, target_test, shadow_train, shadow_tes
     # loss = nn.CrossEntropyLoss()
     # optimizer = optim.SGD(shadow_model.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-4)
     # batch_size = 64
-    # shadow = shadow_model_training(shadow_trainloader, shadow_testloader, shadow_model, device, 0, 0, 0, batch_size, loss, optimizer)
-
-    # acc_train = 0
-    # acc_test = 0
-
-    # for i in range(100):
-    #     print("<======================= Epoch " + str(i+1) + " =======================>")
-    #     print("shadow training")
-
-    #     acc_train = shadow.train()
-    #     print("shadow testing")
-    #     acc_test = shadow.test()
-
-    #     overfitting = round(acc_train - acc_test, 6)
-    #     print('The overfitting rate is %s' % overfitting)
-
-    # filename = name + "_shadow.pth"
-    # FILE_PATH = TARGET_PATH + filename
-    # shadow.saveModel(FILE_PATH)
-    # print("Saved shadow model!!!")
-    # print("Finished training!!!")
+    # train_shadow_model(TARGET_PATH, device, num_classes, target_model, shadow_trainloader, shadow_testloader, 0, 0, 0)
+    
 
     attack_trainloader, attack_testloader = get_attack_dataset_without_shadow(target_train, target_test, batch_size=64)
     gradient_size = get_gradient_size(target_model)

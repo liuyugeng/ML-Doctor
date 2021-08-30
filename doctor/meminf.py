@@ -619,7 +619,7 @@ class attack_for_whitebox():
         torch.save(self.attack_model.state_dict(), path)
 
 
-def train_model(PATH, device, target_model, train_loader, test_loader, use_DP, num_classes, noise, norm):
+def train_shadow_model(PATH, device, num_classes, target_model, train_loader, test_loader, use_DP, noise, norm):
     model = shadow_model_training(train_loader, test_loader, target_model, device, use_DP, num_classes, noise, norm)
     acc_train = 0
     acc_test = 0
@@ -644,7 +644,7 @@ def train_model(PATH, device, target_model, train_loader, test_loader, use_DP, n
 
     return acc_train, acc_test, overfitting
 
-def train_distillation(MODEL_PATH, DL_PATH, device, target_model, student_model, train_loader, test_loader):
+def train_shadow_distillation(MODEL_PATH, DL_PATH, device, target_model, student_model, train_loader, test_loader):
     distillation = distillation_training(MODEL_PATH, train_loader, test_loader, student_model, target_model, device)
 
     for i in range(100):
