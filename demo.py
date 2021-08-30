@@ -84,8 +84,20 @@ def test_meminf(num_classes, target_train, target_test, shadow_train, shadow_tes
 
     attack_mode1(TARGET_PATH + name + "_target.pth", TARGET_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
 
-def test_attrinf(num_classes, target_trainloader, target_testloader, target_model):
-    pass
+def test_attrinf(num_classes, target_train, target_test, target_model):
+    attack_length = int(0.5 * len(target_train))
+    rest = len(target_train) - attack_length
+
+    attack_train, _ = torch.utils.data.random_split(target_train, [attack_length, rest])
+    attack_test = target_test
+
+    attack_trainloader = torch.utils.data.DataLoader(
+        attack_train, batch_size=64, shuffle=True, num_workers=2)
+    attack_testloader = torch.utils.data.DataLoader(
+        attack_test, batch_size=64, shuffle=True, num_workers=2)
+
+    image_size = [1] + list(target_train[0][0].shape)
+    train_attack_model(TARGET_PATH + name + "_target.pth", TARGET_PATH, num_classes[1], device, target_model, attack_trainloader, attack_testloader, image_size)
 
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -101,21 +113,9 @@ if __name__ == "__main__":
 
     # train_model(TARGET_PATH, device, target_model, target_train, target_test, name)
     # test_meminf(num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
+    test_attrinf(num_classes, target_train, target_test, target_model)
 
     
-    attack_length = int(0.5 * len(target_train))
-    rest = len(target_train) - attack_length
-    attack_model = attrinf_attack_model()
-
-    attack_train, _ = torch.utils.data.random_split(target_train, [attack_length, rest])
-    attack_test = target_test
-
-    attack_trainloader = torch.utils.data.DataLoader(
-        attack_train, batch_size=64, shuffle=True, num_workers=2)
-    attack_testloader = torch.utils.data.DataLoader(
-        attack_test, batch_size=64, shuffle=True, num_workers=2)
-
-    image_size = [1] + list(target_train[0][0].shape)
-    train_attack_model(TARGET_PATH + name + "_target.pth", TARGET_PATH, num_classes[1], device, target_model, attack_trainloader, attack_testloader, image_size, attack_model)
+    
 
     

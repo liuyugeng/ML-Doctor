@@ -31,10 +31,10 @@ class attack_training():
             activation[name] = output.detach()
         return hook
 
-    def init_attack_model(self, size, output_classes, attack_model):
+    def init_attack_model(self, size, output_classes):
         x = torch.rand(size).to(self.device)
         input_classes = self.get_middle_output(x).flatten().shape[0]
-        self.attack_model = attack_model(inputs=input_classes, outputs=output_classes)
+        self.attack_model = attrinf_attack_model(inputs=input_classes, outputs=output_classes)
         self.attack_model.to(self.device)
         self.optimizer = optim.Adam(self.attack_model.parameters(), lr=1e-3)
         if output_classes == 2:
@@ -51,7 +51,7 @@ class attack_training():
         if 1 > len(temp):
             raise IndexError('layer is out of range')
 
-        name = temp[-1].split('.')
+        name = temp[-2].split('.')
         var = eval('self.target_model.' + name[0])
         out = {}
         var[int(name[1])].register_forward_hook(self._get_activation(name[1], out))
@@ -162,16 +162,14 @@ class attack_training():
     def saveModel(self, path):
         torch.save(self.attack_model.state_dict(), path)
 
-def train_attack_model(TARGET_PATH, ATTACK_PATH, output_classes, device, target_model, train_loader, test_loader, size, attack_model):
+def train_attack_model(TARGET_PATH, ATTACK_PATH, output_classes, device, target_model, train_loader, test_loader, size):
     ATTACK_PATH = ATTACK_PATH + "attack_model.pth"
 
     attack = attack_training(device, train_loader, test_loader, target_model, TARGET_PATH, ATTACK_PATH)
-    attack.init_attack_model(size, output_classes, attack_model)
+    attack.init_attack_model(size, output_classes)
 
     for epoch in range(100):
-        flag = 0
-        if epoch == 99:
-            flag = 1
+        flag = 1 if epoch==99 else 0
         print("<======================= Epoch " + str(epoch+1) + " =======================>")
         print("attack training")
         acc_train = attack.train(flag)
