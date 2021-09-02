@@ -1,5 +1,6 @@
 import os
 import torch
+import torch.nn as nn
 
 from doctor.meminf import *
 from doctor.attrinf import *

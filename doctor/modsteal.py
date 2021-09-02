@@ -1,7 +1,5 @@
 import torch
 import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
-import torchvision.transforms as transforms
 
 from math import *
 from tqdm import tqdm
