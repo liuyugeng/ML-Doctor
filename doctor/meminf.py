@@ -281,8 +281,8 @@ class attack_for_blackbox():
                     output, prediction, members = output.to(self.device), prediction.to(self.device), members.to(self.device)
 
                     results = self.attack_model(output, prediction)
+                    results = F.softmax(results, dim=1)
 
-                    # results = F.softmax(results, dim=1)
                     losses = self.criterion(results, members)
                     losses.backward()
                     self.optimizer.step()
@@ -346,7 +346,6 @@ class attack_for_blackbox():
                         _, predicted = results.max(1)
                         total += members.size(0)
                         correct += predicted.eq(members).sum().item()
-
                         results = F.softmax(results, dim=1)
 
                         if epoch == 49:
