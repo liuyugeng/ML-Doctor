@@ -1,46 +1,30 @@
 import torch
-import random
-import numpy as np
-import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 import torchvision.transforms as transforms
 
 from math import *
-from PIL import Image
 from tqdm import tqdm
 
-class attackTraining():
-    def __init__(self, trainloader, testloader, target_model, attack_model, TARGET_PATH, ATTACK_PATH, device, batch_size, loss, optimizer):
+class train_steal_model():
+    def __init__(self, train_loader, test_loader, target_model, attack_model, TARGET_PATH, ATTACK_PATH, device, batch_size, loss, optimizer):
         self.device = device
         self.batch_size = batch_size
-        self.trainloader = trainloader
-        self.testloader = testloader
+        self.train_loader = train_loader
+        self.test_loader = test_loader
 
         self.TARGET_PATH = TARGET_PATH
         self.target_model = target_model.to(self.device)
         self.target_model.load_state_dict(torch.load(self.TARGET_PATH, map_location=self.device))
         self.target_model.eval()
         
-
         self.ATTACK_PATH = ATTACK_PATH
-
         self.attack_model = attack_model.to(self.device)
-
-        if self.device == 'cuda':
-            self.attack_model = torch.nn.DataParallel(self.attack_model)
-            cudnn.benchmark = True
 
         self.criterion = loss
         self.optimizer = optimizer
 
         self.index = 0
-
-        self.transform_test = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ])
 
         self.count = [0 for i in range(10)]
         self.dataset = []
@@ -70,7 +54,7 @@ class attackTraining():
         correct_target = 0
         total_target = 0
 
-        for inputs, targets in tqdm(self.trainloader):
+        for inputs, targets in tqdm(self.train_loader):
 
             inputs, targets = inputs.to(self.device), targets.to(self.device)
 
@@ -95,8 +79,6 @@ class attackTraining():
             correct_target += predicted.eq(target_model_output).sum().item()
 
 
-
-
         print( 'Train Acc: %.3f%% (%d/%d)' % (100.*correct/total, correct, total))
         print( 'Train Agreement: %.3f%% (%d/%d)' % (100.*correct_target/total_target, correct_target, total_target))
 
@@ -111,7 +93,7 @@ class attackTraining():
         agreement_total = 0
 
         with torch.no_grad():
-            for inputs, targets in self.testloader:
+            for inputs, targets in self.test_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.attack_model(inputs)
                 _, predicted = outputs.max(1)

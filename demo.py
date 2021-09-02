@@ -1,11 +1,9 @@
 import os
-from numpy.lib.function_base import gradient
 import torch
-import torch.nn as nn
-import torch.optim as optim
 
 from doctor.meminf import *
 from doctor.attrinf import *
+from doctor.modsteal import *
 from demoloader.train import *
 from utils.define_models import *
 from demoloader.dataloader import *
@@ -40,7 +38,7 @@ def train_model(PATH, device, model, train_set, test_set, name):
 
     return acc_train, acc_test, overfitting
 
-def test_meminf(num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model):
+def test_meminf(num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model, device):
     # target_trainloader = torch.utils.data.DataLoader(
     #     target_train, batch_size=64, shuffle=True, num_workers=2)
     # target_testloader = torch.utils.data.DataLoader(
@@ -65,7 +63,7 @@ def test_meminf(num_classes, target_train, target_test, shadow_train, shadow_tes
 
     attack_mode1(TARGET_PATH + name + "_target.pth", TARGET_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
 
-def test_attrinf(num_classes, target_train, target_test, target_model):
+def test_attrinf(num_classes, target_train, target_test, target_model, device):
     attack_length = int(0.5 * len(target_train))
     rest = len(target_train) - attack_length
 
@@ -80,6 +78,29 @@ def test_attrinf(num_classes, target_train, target_test, target_model):
     image_size = [1] + list(target_train[0][0].shape)
     train_attack_model(TARGET_PATH + name + "_target.pth", TARGET_PATH, num_classes[1], device, target_model, attack_trainloader, attack_testloader, image_size)
 
+def test_modsteal(train, test, target_model, attack_model, device, PATH, name):
+    train_loader = torch.utils.data.DataLoader(
+        train, batch_size=64, shuffle=True, num_workers=2)
+    test_loader = torch.utils.data.DataLoader(
+        test, batch_size=64, shuffle=True, num_workers=2)
+
+    TARGET_PATH = PATH + name + "_target.pth"
+    ATTACK_PATH = PATH + name + "_modsteal.pth"
+
+    loss = nn.MSELoss()
+    optimizer = optim.SGD(attack_model.parameters(), lr=0.01, momentum=0.9)
+
+    attacking = train_steal_model(train_loader, test_loader, target_model, attack_model, TARGET_PATH, ATTACK_PATH, device, 64, loss, optimizer)
+
+    for i in range(100):
+        print("[Epoch %d/%d] attack training"%((i+1), 100))
+        attacking.train_with_same_distribution()
+    
+    print("Finished training!!!")
+    attacking.saveModel()
+    acc_test, agreement_test = attacking.test()
+    print("Saved Target Model!!!\nstolen test acc = %.3f, stolen test agreement = %.3f\n"%(acc_test, agreement_test))
+
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = torch.device("cuda:0")
@@ -87,16 +108,16 @@ if __name__ == "__main__":
     TARGET_PATH = "./demoloader/trained_model/"
 
     name = "UTKFace"
-    attr = ["race", "gender"]
+    attr = "race"
     root = "../data"
 
     num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(name, attr, root)
 
     # train_model(TARGET_PATH, device, target_model, target_train, target_test, name)
     # test_meminf(num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
-    test_attrinf(num_classes, target_train, target_test, target_model)
+    # test_attrinf(num_classes, target_train, target_test, target_model)
 
-    
+    test_modsteal(shadow_train+shadow_test, target_test, target_model, shadow_model, device, TARGET_PATH, name)
     
 
     
