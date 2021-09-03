@@ -28,7 +28,7 @@ class shadow_model_training():
     def __init__(self, trainloader, testloader, model, device, use_DP, noise, norm, batch_size, loss, optimizer):
         self.use_DP = use_DP
         self.device = device
-        self.net = model.to(self.device)
+        self.model = model.to(self.device)
         self.trainloader = trainloader
         self.testloader = testloader
 
@@ -38,11 +38,11 @@ class shadow_model_training():
         self.noise_multiplier, self.max_grad_norm = noise, norm
         
         if self.use_DP:
-            self.net = module_modification.convert_batchnorm_modules(self.net)
+            self.model = module_modification.convert_batchnorm_modules(self.model)
             inspector = DPModelInspector()
-            inspector.validate(self.net)
+            inspector.validate(self.model)
             privacy_engine = PrivacyEngine(
-                self.net,
+                self.model,
                 batch_size=batch_size,
                 sample_size=len(self.trainloader.dataset),
                 alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
@@ -57,7 +57,7 @@ class shadow_model_training():
 
     # Training
     def train(self):
-        self.net.train()
+        self.model.train()
         
         train_loss = 0
         correct = 0
@@ -68,7 +68,7 @@ class shadow_model_training():
             inputs, targets = inputs.to(self.device), targets.to(self.device)
 
             self.optimizer.zero_grad()
-            outputs = self.net(inputs)
+            outputs = self.model(inputs)
 
             loss = self.criterion(outputs, targets)
             loss.backward()
@@ -91,20 +91,20 @@ class shadow_model_training():
 
 
     def saveModel(self, path):
-        torch.save(self.net.state_dict(), path)
+        torch.save(self.model.state_dict(), path)
 
     def get_noise_norm(self):
         return self.noise_multiplier, self.max_grad_norm
 
     def test(self):
-        self.net.eval()
+        self.model.eval()
         test_loss = 0
         correct = 0
         total = 0
         with torch.no_grad():
             for inputs, targets in self.testloader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                outputs = self.net(inputs)
+                outputs = self.model(inputs)
 
                 loss = self.criterion(outputs, targets)
 
@@ -214,10 +214,6 @@ class attack_for_blackbox():
         self.attack_model = attack_model.to(self.device)
         torch.manual_seed(0)
         self.attack_model.apply(weights_init)
-
-        if self.device == 'cuda':
-            self.net = torch.nn.DataParallel(self.net)
-            cudnn.benchmark = True
 
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(self.attack_model.parameters(), lr=1e-5)
@@ -415,10 +411,6 @@ class attack_for_whitebox():
         self.attack_model = attack_model.to(self.device)
         torch.manual_seed(0)
         self.attack_model.apply(weights_init)
-
-        if self.device == 'cuda':
-            self.net = torch.nn.DataParallel(self.net)
-            cudnn.benchmark = True
 
         self.target_criterion = nn.CrossEntropyLoss(reduction='none')
         self.attack_criterion = nn.CrossEntropyLoss()
