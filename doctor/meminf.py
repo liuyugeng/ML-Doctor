@@ -735,7 +735,7 @@ def attack_mode0(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainload
     attack = attack_for_blackbox(SHADOW_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device)
 
     if get_attack_set:
-        # attack.delete_pickle()
+        attack.delete_pickle()
         attack.prepare_dataset()
 
     for i in range(50):
@@ -757,7 +757,7 @@ def attack_mode1(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_te
     attack = attack_for_blackbox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device)
 
     if get_attack_set:
-        # attack.delete_pickle()
+        attack.delete_pickle()
         attack.prepare_dataset()
 
     for i in range(50):

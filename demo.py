@@ -58,8 +58,12 @@ def test_meminf(num_classes, target_train, target_test, shadow_train, shadow_tes
     
 
     attack_trainloader, attack_testloader = get_attack_dataset_without_shadow(target_train, target_test, batch_size=64)
+
+    #for white box
     gradient_size = get_gradient_size(target_model)
     total = gradient_size[0][0] // 2 * gradient_size[0][1] // 2
+
+    
     attack_model = PartialAttackModel(num_classes)
 
     attack_mode1(TARGET_PATH + name + "_target.pth", TARGET_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
