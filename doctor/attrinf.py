@@ -102,7 +102,7 @@ class attack_training():
 
             final_result.append(test_f1_score)
 
-            with open(self.ATTACK_PATH + "attrinf_test.p", "wb") as f:
+            with open(self.ATTACK_PATH + "attrinf_train.p", "wb") as f:
                 pickle.dump((final_gndtrth, final_predict, final_probabe), f)
 
             print("Saved Attack Test Ground Truth and Predict Sets")
