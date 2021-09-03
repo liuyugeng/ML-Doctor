@@ -222,7 +222,7 @@ class attack_for_blackbox():
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(self.attack_model.parameters(), lr=1e-5)
 
-    def get_data(self, model, inputs, targets):
+    def _get_data(self, model, inputs):
         result = model(inputs)
         
         output, _ = torch.sort(result, descending=True)
@@ -244,7 +244,7 @@ class attack_for_blackbox():
         with open(self.ATTACK_SETS + "train.p", "wb") as f:
             for inputs, targets, members in self.attack_train_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                output, prediction = self.get_data(self.shadow_model, inputs, targets)
+                output, prediction = self._get_data(self.shadow_model, inputs)
                 # output = output.cpu().detach().numpy()
             
                 pickle.dump((output, prediction, members), f)
@@ -254,7 +254,7 @@ class attack_for_blackbox():
         with open(self.ATTACK_SETS + "test.p", "wb") as f:
             for inputs, targets, members in self.attack_test_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                output, prediction = self.get_data(self.target_model, inputs, targets)
+                output, prediction = self._get_data(self.target_model, inputs)
                 # output = output.cpu().detach().numpy()
             
                 pickle.dump((output, prediction, members), f)
@@ -292,7 +292,7 @@ class attack_for_blackbox():
                     total += members.size(0)
                     correct += predicted.eq(members).sum().item()
 
-                    if epoch == 49:
+                    if epoch:
                         final_train_gndtrth.append(members)
                         final_train_predict.append(predicted)
                         final_train_probabe.append(results[:, 1])
@@ -301,7 +301,7 @@ class attack_for_blackbox():
                 except EOFError:
                     break
 
-        if epoch == 49:
+        if epoch:
             final_train_gndtrth = torch.cat(final_train_gndtrth, dim=0).cpu().detach().numpy()
             final_train_predict = torch.cat(final_train_predict, dim=0).cpu().detach().numpy()
             final_train_probabe = torch.cat(final_train_probabe, dim=0).cpu().detach().numpy()
@@ -348,7 +348,7 @@ class attack_for_blackbox():
                         correct += predicted.eq(members).sum().item()
                         results = F.softmax(results, dim=1)
 
-                        if epoch == 49:
+                        if epoch:
                             final_test_gndtrth.append(members)
                             final_test_predict.append(predicted)
                             final_test_probabe.append(results[:, 1])
@@ -357,7 +357,7 @@ class attack_for_blackbox():
                     except EOFError:
                         break
 
-        if epoch == 49:
+        if epoch:
             final_test_gndtrth = torch.cat(final_test_gndtrth, dim=0).cpu().numpy()
             final_test_predict = torch.cat(final_test_predict, dim=0).cpu().numpy()
             final_test_probabe = torch.cat(final_test_probabe, dim=0).cpu().numpy()
@@ -429,7 +429,7 @@ class attack_for_whitebox():
         self.attack_test_data = None
         
 
-    def get_data(self, model, inputs, targets):
+    def _get_data(self, model, inputs, targets):
         results = model(inputs)
         # outputs = F.softmax(outputs, dim=1)
         losses = self.target_criterion(results, targets)
@@ -465,7 +465,7 @@ class attack_for_whitebox():
         with open(self.ATTACK_SETS + "train.p", "wb") as f:
             for inputs, targets, members in self.attack_train_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                output, loss, gradient, label = self.get_data(self.shadow_model, inputs, targets)
+                output, loss, gradient, label = self._get_data(self.shadow_model, inputs, targets)
 
                 pickle.dump((output, loss, gradient, label, members), f)
 
@@ -474,7 +474,7 @@ class attack_for_whitebox():
         with open(self.ATTACK_SETS + "test.p", "wb") as f:
             for inputs, targets, members in self.attack_test_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                output, loss, gradient, label = self.get_data(self.target_model, inputs, targets)
+                output, loss, gradient, label = self._get_data(self.target_model, inputs, targets)
             
                 pickle.dump((output, loss, gradient, label, members), f)
 
@@ -514,7 +514,7 @@ class attack_for_whitebox():
                     total += members.size(0)
                     correct += predicted.eq(members).sum().item()
 
-                    if epoch == 49:
+                    if epoch:
                         final_train_gndtrth.append(members)
                         final_train_predict.append(predicted)
                         final_train_probabe.append(results[:, 1])
@@ -523,7 +523,7 @@ class attack_for_whitebox():
                 except EOFError:
                     break	
 
-        if epoch == 49:
+        if epoch:
             final_train_gndtrth = torch.cat(final_train_gndtrth, dim=0).cpu().detach().numpy()
             final_train_predict = torch.cat(final_train_predict, dim=0).cpu().detach().numpy()
             final_train_probabe = torch.cat(final_train_probabe, dim=0).cpu().detach().numpy()
@@ -573,7 +573,7 @@ class attack_for_whitebox():
 
                         results = F.softmax(results, dim=1)
 
-                        if epoch == 49:
+                        if epoch:
                             final_test_gndtrth.append(members)
                             final_test_predict.append(predicted)
                             final_test_probabe.append(results[:, 1])
@@ -582,7 +582,7 @@ class attack_for_whitebox():
                     except EOFError:
                         break
 
-        if epoch == 49:
+        if epoch:
             final_test_gndtrth = torch.cat(final_test_gndtrth, dim=0).cpu().numpy()
             final_test_predict = torch.cat(final_test_predict, dim=0).cpu().numpy()
             final_test_probabe = torch.cat(final_test_probabe, dim=0).cpu().numpy()
@@ -739,9 +739,10 @@ def attack_mode0(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainload
         attack.prepare_dataset()
 
     for i in range(50):
+        flag = 1 if i == 49 else 0
         print("Epoch %d :" % (i+1))
-        res_train = attack.train(i, RESULT_PATH)
-        res_test = attack.test(i, RESULT_PATH)
+        res_train = attack.train(flag, RESULT_PATH)
+        res_test = attack.test(flag, RESULT_PATH)
 
     attack.saveModel(MODELS_PATH)
     print("Saved Attack Model")
@@ -760,9 +761,10 @@ def attack_mode1(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_te
         attack.prepare_dataset()
 
     for i in range(50):
+        flag = 1 if i == 49 else 0
         print("Epoch %d :" % (i+1))
-        res_train = attack.train(i, RESULT_PATH)
-        res_test = attack.test(i, RESULT_PATH)
+        res_train = attack.train(flag, RESULT_PATH)
+        res_test = attack.test(flag, RESULT_PATH)
 
     attack.saveModel(MODELS_PATH)
     print("Saved Attack Model")
@@ -781,9 +783,10 @@ def attack_mode2(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_te
         attack.prepare_dataset()
 
     for i in range(50):
+        flag = 1 if i == 49 else 0
         print("Epoch %d :" % (i+1))
-        res_train = attack.train(i, RESULT_PATH)
-        res_test = attack.test(i, RESULT_PATH)
+        res_train = attack.train(flag, RESULT_PATH)
+        res_test = attack.test(flag, RESULT_PATH)
 
     attack.saveModel(MODELS_PATH)
     print("Saved Attack Model")
@@ -802,9 +805,10 @@ def attack_mode3(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainload
         attack.prepare_dataset()
 
     for i in range(50):
+        flag = 1 if i == 49 else 0
         print("Epoch %d :" % (i+1))
-        res_train = attack.train(i, RESULT_PATH)
-        res_test = attack.test(i, RESULT_PATH)
+        res_train = attack.train(flag, RESULT_PATH)
+        res_test = attack.test(flag, RESULT_PATH)
 
     attack.saveModel(MODELS_PATH)
     print("Saved Attack Model")
