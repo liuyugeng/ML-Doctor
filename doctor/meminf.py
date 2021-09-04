@@ -24,7 +24,7 @@ def weights_init(m):
         nn.init.xavier_normal_(m.weight)
         nn.init.constant_(m.bias, 0)
 
-class shadow_model_training():
+class shadow():
     def __init__(self, trainloader, testloader, model, device, use_DP, noise, norm, batch_size, loss, optimizer):
         self.use_DP = use_DP
         self.device = device
@@ -610,8 +610,8 @@ class attack_for_whitebox():
         torch.save(self.attack_model.state_dict(), path)
 
 
-def train_shadow_model(PATH, device, num_classes, target_model, train_loader, test_loader, use_DP, noise, norm):
-    model = shadow_model_training(train_loader, test_loader, target_model, device, use_DP, num_classes, noise, norm)
+def train_shadow_model(PATH, device, shadow_model, train_loader, test_loader, use_DP, noise, norm, batch_size, loss, optimizer):
+    model = shadow(train_loader, test_loader, shadow_model, device, use_DP, noise, norm, batch_size, loss, optimizer)
     acc_train = 0
     acc_test = 0
 
@@ -628,7 +628,7 @@ def train_shadow_model(PATH, device, num_classes, target_model, train_loader, te
 
         print('The overfitting rate is %s' % overfitting)
 
-    FILE_PATH = PATH + "shadow.pth"
+    FILE_PATH = PATH + "_shadow.pth"
     model.saveModel(FILE_PATH)
     print("saved shadow model!!!")
     print("Finished training!!!")
@@ -652,7 +652,7 @@ def train_shadow_distillation(MODEL_PATH, DL_PATH, device, target_model, student
         print('The overfitting rate is %s' % overfitting)
 
         
-    result_path = DL_PATH + "shadow.pth"
+    result_path = DL_PATH + "_shadow.pth"
 
     distillation.saveModel(result_path)
     print("Saved shadow model!!!")
@@ -719,9 +719,9 @@ def get_attack_dataset_with_shadow(target_train, target_test, shadow_train, shad
 
 
 def attack_mode0(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, get_attack_set, num_classes):
-    MODELS_PATH = ATTACK_PATH + "attack0.pth"
-    RESULT_PATH = ATTACK_PATH + "attack0.p"
-    ATTACK_SETS = TARGET_PATH + "attack_mode0_"
+    MODELS_PATH = ATTACK_PATH + "_meminf_attack0.pth"
+    RESULT_PATH = ATTACK_PATH + "_meminf_attack0.p"
+    ATTACK_SETS = ATTACK_PATH + "_meminf_attack_mode0_"
 
 
     attack = attack_for_blackbox(SHADOW_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device)
@@ -742,9 +742,9 @@ def attack_mode0(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainload
     return res_train, res_test
 
 def attack_mode1(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, get_attack_set, num_classes):
-    MODELS_PATH = ATTACK_PATH + "attack1.pth"
-    RESULT_PATH = ATTACK_PATH + "attack1.p"
-    ATTACK_SETS = TARGET_PATH + "attack_mode1_"
+    MODELS_PATH = ATTACK_PATH + "_meminf_attack1.pth"
+    RESULT_PATH = ATTACK_PATH + "_meminf_attack1.p"
+    ATTACK_SETS = ATTACK_PATH + "_meminf_attack_mode1_"
 
     attack = attack_for_blackbox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device)
 
@@ -764,9 +764,9 @@ def attack_mode1(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_te
     return res_train, res_test
 
 def attack_mode2(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, get_attack_set, num_classes):
-    MODELS_PATH = ATTACK_PATH + "attack2.pth"
-    RESULT_PATH = ATTACK_PATH + "attack2.p"
-    ATTACK_SETS = TARGET_PATH + "attack_mode2_"
+    MODELS_PATH = ATTACK_PATH + "_meminf_attack2.pth"
+    RESULT_PATH = ATTACK_PATH + "_meminf_attack2.p"
+    ATTACK_SETS = ATTACK_PATH + "_meminf_attack_mode2_"
 
     attack = attack_for_whitebox(TARGET_PATH, TARGET_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, target_model, attack_model, device, num_classes)
     
@@ -786,9 +786,9 @@ def attack_mode2(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_te
     return res_train, res_test
 
 def attack_mode3(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, get_attack_set, num_classes):
-    MODELS_PATH = ATTACK_PATH + "attack3.pth"
-    RESULT_PATH = ATTACK_PATH + "attack3.p"
-    ATTACK_SETS = TARGET_PATH + "attack_mode3_"
+    MODELS_PATH = ATTACK_PATH + "_meminf_attack3.pth"
+    RESULT_PATH = ATTACK_PATH + "_meminf_attack3.p"
+    ATTACK_SETS = ATTACK_PATH + "_meminf_attack_mode3_"
 
     attack = attack_for_whitebox(TARGET_PATH, SHADOW_PATH, ATTACK_SETS, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, device, num_classes)
     

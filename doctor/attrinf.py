@@ -102,7 +102,7 @@ class attack_training():
 
             final_result.append(test_f1_score)
 
-            with open(self.ATTACK_PATH + "attrinf_train.p", "wb") as f:
+            with open(self.ATTACK_PATH + "_attrinf_train.p", "wb") as f:
                 pickle.dump((final_gndtrth, final_predict, final_probabe), f)
 
             print("Saved Attack Test Ground Truth and Predict Sets")
@@ -148,7 +148,7 @@ class attack_training():
 
             final_result.append(test_f1_score)
 
-            with open(self.ATTACK_PATH + "attrinf_test.p", "wb") as f:
+            with open(self.ATTACK_PATH + "_attrinf_test.p", "wb") as f:
                 pickle.dump((final_gndtrth, final_predict, final_probabe), f)
 
             print("Saved Attack Test Ground Truth and Predict Sets")
@@ -159,12 +159,10 @@ class attack_training():
 
         return final_result
 
-    def saveModel(self, path):
-        torch.save(self.attack_model.state_dict(), path)
+    def saveModel(self):
+        torch.save(self.attack_model.state_dict(), self.ATTACK_PATH + "_attrinf_attack_model.pth")
 
 def train_attack_model(TARGET_PATH, ATTACK_PATH, output_classes, device, target_model, train_loader, test_loader, size):
-    ATTACK_PATH = ATTACK_PATH + "attack_model.pth"
-
     attack = attack_training(device, train_loader, test_loader, target_model, TARGET_PATH, ATTACK_PATH)
     attack.init_attack_model(size, output_classes)
 
@@ -176,7 +174,7 @@ def train_attack_model(TARGET_PATH, ATTACK_PATH, output_classes, device, target_
         print("attack testing")
         acc_test = attack.test(flag)
 
-    attack.saveModel(ATTACK_PATH)
+    attack.saveModel()
     print("Saved Attack Model")
     print("Finished!!!")
 
