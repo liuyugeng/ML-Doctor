@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 
 from doctor.meminf import *
+from doctor.modinv import *
 from doctor.attrinf import *
 from doctor.modsteal import *
 from demoloader.train import *
@@ -121,8 +122,9 @@ if __name__ == "__main__":
     # train_model(TARGET_PATH, device, target_model, target_train, target_test, name)
     # test_meminf(num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
     # test_attrinf(num_classes, target_train, target_test, target_model)
+    # test_modsteal(shadow_train+shadow_test, target_test, target_model, shadow_model, device, TARGET_PATH, name)
 
-    test_modsteal(shadow_train+shadow_test, target_test, target_model, shadow_model, device, TARGET_PATH, name)
+
     
 
     
