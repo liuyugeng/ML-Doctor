@@ -8,20 +8,17 @@ import torch.utils.data
 from torch.autograd import Variable
 
 
-class ModelInversion(object):
+class ccs_inversion(object):
     '''
     Model inversion is a kind of data reconstruct attack.
     This class we implement the attack on neural network,
     the attack goal is to generate data that is close to original data distribution.
     This attack was first described in Fredrikson's paper (Algorithm 1):
     "Model Inversion Attacks that Exploit Confidence Information and Basic Countermeasures" (CCS2015)
-
-
     -----------------------------NOTICE---------------------------
     If the model's output layer doesn't contain Softmax layer, please add it manually.
     And parameters will influence the quality of the reconstructed data significantly.
     --------------------------------------------------------------
-
     Args:
         ------------------------
         :param target_model: the target model which we are trying to reconstruct its training dataset
@@ -69,7 +66,6 @@ class ModelInversion(object):
     def reverse_mse(self, ori_dataset):
         '''
         output the average MSE value of different classes
-
         :param ori_dataset: the data used to train the target model, please make sure setting the batch size as 1.
         :return: MSE value
         '''
@@ -99,7 +95,6 @@ class ModelInversion(object):
 
     def figure_mse(self, recover_fig, ori_fig):
         '''
-
         :param recover_fig: figure recovered by model inversion attack, type:
         :param ori_fig: figure in the training dataset
         :return: MSE value of these two figures
@@ -110,14 +105,14 @@ class ModelInversion(object):
         
         
 
-def inversion(G, D, T, E, iden, device, noise = 100,lr=1e-3, momentum=0.9, lamda=100, iter_times=1500, clip_range=1):
+def revealer_inversion(G, D, T, E, iden, device, noise = 100,lr=1e-3, momentum=0.9, lamda=100, iter_times=1500, clip_range=1):
     '''
     
     This model inversion attack was proposed by Zhang et al. in CVPR20
     "The Secret Revealer: Generative Model-Inversion Attacks Against Deep Neural Networks"
     '''
     iden = iden.view(-1).long().to(device)
-    T, E = T.to(device), E.to(device)
+    G, D, T, E = G.to(device), D.to(device), T.to(device), E.to(device)
     criterion = nn.CrossEntropyLoss().to(device)
     bs = iden.shape[0]
     
@@ -138,16 +133,14 @@ def inversion(G, D, T, E, iden, device, noise = 100,lr=1e-3, momentum=0.9, lamda
         np.random.seed(random_seed) 
         random.seed(random_seed)
 
-        z = torch.randn(bs, noise,1,1).to(device).float()
+        z = torch.randn(bs, noise, 1, 1).to(device).float()
         z.requires_grad = True
-        v = torch.zeros(bs, noise,1,1).to(device).float()
+        v = torch.zeros(bs, noise, 1, 1).to(device).float()
             
         for i in range(iter_times):
             fake = G(z)
-
             label = D(fake)
             out = T(fake)
-
 
             if z.grad is not None:
                 z.grad.data.zero_()
@@ -193,29 +186,38 @@ def inversion(G, D, T, E, iden, device, noise = 100,lr=1e-3, momentum=0.9, lamda
     print("Acc:{:.2f}\t".format(cnt * 1.0 / (bs*10)))
     return cnt * 1.0 / (bs*10)
 
-def load_data(PATH_1, PATH_2, target_model, evaluate_model):
-    target_model.load_state_dict(torch.load(PATH_1))
-    evaluate_model.load_state_dict(torch.load(PATH_2))
+def load_data(PATH_target, PATH_evaluation, target_model, evaluate_model):
+    '''	
+    Evaluate model is used to predict the identity based on the input reconstructed image.	
+    If the evaluation classifier achieves high accuracy, the reconstructed image is considered to expose 
+    private information about the target label.
+    
+    The evaluate model should be different from the target network because the reconstructed images may
+    incorporate features that overfit the target network while being semantically meaningless.
+    Moreover, the evaluation classifier should be highly performant.
+    '''
+    target_model.load_state_dict(torch.load(PATH_target))
+    evaluate_model.load_state_dict(torch.load(PATH_evaluation))
     print("Finished Loading")
 
     return target_model, evaluate_model
 
-def prepare_GAN(data_type, Discriminator, Generator, PATH_1, PATH_2, device):
-    D = Discriminator(ngpu=1).eval()
-    G = Generator(ngpu=1).eval()
-
-    D.load_state_dict(torch.load(PATH_1)).to(device)
-    G.load_state_dict(torch.load(PATH_2)).to(device)
+def prepare_GAN(data_type, discriminator, generator, PATH_1, PATH_2):
+    discriminator.load_state_dict(torch.load(PATH_1))
+    generator.load_state_dict(torch.load(PATH_2))
 
     iden = torch.zeros(10)
 
-    if data_type.lower() == 'cifar100':
+    if data_type.lower() == 'stl10' or  data_type.lower() == 'fmnist':
         for i in range(10):
             iden[i] = i
 
-    else:
+    elif data_type.lower() == 'utkface':
         for i in range(10):
-            iden[i] = 4
+            iden[i] = i % 4
 
-    return G, D, iden
-
+    elif data_type.lower() == 'celeba':
+        for i in range(10):
+            iden[i] = i % 8
+            
+    return discriminator, generator, iden

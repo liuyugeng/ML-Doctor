@@ -40,6 +40,27 @@ def train_model(PATH, device, train_set, test_set, model):
 
     return acc_train, acc_test, overfitting
 
+def train_DCGAN(PATH, device, train_set, name):
+    train_loader = torch.utils.data.DataLoader(
+        train_set, batch_size=128, shuffle=True, num_workers=2)
+
+    if name.lower() == 'fmnist':
+        D = FashionDiscriminator(ngpu=1).eval()
+        G = FashionGenerator(ngpu=1).eval()
+    else:
+        D = Discriminator(ngpu=1).eval()
+        G = Generator(ngpu=1).eval()
+
+    print("Starting Training DCGAN...")
+    # For each epoch
+
+    GAN = GAN_training(train_loader, D, G, device)
+    for i in range(10):
+        print("<======================= Epoch " + str(i+1) + " =======================>")
+        GAN.train()
+
+    GAN.saveModel(PATH + "_discriminator.pth", PATH + "_generator.pth")
+
 def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model):
     batch_size = 64
     if shadow_model:
@@ -73,17 +94,27 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
 
 def test_modinv(PATH, device, num_classes, target_train, target_model, name):
     size = (1,) + tuple(target_train[0][0].shape)
-    target_model, evaluation_model = load_data(PATH + "_target.pth", PATH + "_shadow.pth", target_model, target_model)
+    target_model, evaluation_model = load_data(PATH + "_target.pth", PATH + "_target.pth", target_model, target_model)
 
     # CCS 15
-    modinv_ccs = ModelInversion(target_model, size, num_classes, 1, 3000, 100, 0.001, 0.003, device)
+    modinv_ccs = ccs_inversion(target_model, size, num_classes, 1, 3000, 100, 0.001, 0.003, device)
     train_loader = torch.utils.data.DataLoader(target_train, batch_size=1, shuffle=False)
-    result = modinv_ccs.reverse_mse(train_loader)
+    # result = modinv_ccs.reverse_mse(train_loader)
 
     # Secret Revealer
-    G, D, iden = prepare_GAN(name, Discriminator, Generator, PATH, PATH, device)
-    modinv_revealer = inversion(G, D, target_model, evaluation_model, iden, device)
 
+    if name.lower() == 'fmnist':
+        D = FashionDiscriminator(ngpu=1).eval()
+        G = FashionGenerator(ngpu=1).eval()
+    else:
+        D = Discriminator(ngpu=1).eval()
+        G = Generator(ngpu=1).eval()
+
+    PATH_D = PATH + "_discriminator.pth"
+    PATH_G = PATH + "_generator.pth"
+    
+    D, G, iden = prepare_GAN(name, D, G, PATH_D, PATH_G)
+    modinv_revealer = revealer_inversion(G, D, target_model, evaluation_model, iden, device)
 
 def test_attrinf(PATH, device, num_classes, target_train, target_test, target_model):
     attack_length = int(0.5 * len(target_train))
@@ -135,6 +166,7 @@ if __name__ == "__main__":
 
     # train_model(TARGET_PATH, device, target_train, target_test, target_model)
     # test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
-    test_modinv(TARGET_PATH, device, num_classes, target_train, target_model)
+    train_DCGAN(TARGET_PATH, device, target_train + shadow_train, name)
+    test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, name)
     # test_attrinf(TARGET_PATH, device, num_classes, target_train, target_test, target_model)
     # test_modsteal(TARGET_PATH, device, shadow_train+shadow_test, target_test, target_model, shadow_model)
