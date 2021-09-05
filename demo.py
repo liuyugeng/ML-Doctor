@@ -1,6 +1,7 @@
 import os
 import torch
 import torch.nn as nn
+import torchvision.models as models
 
 from doctor.meminf import *
 from doctor.modinv import *
@@ -55,7 +56,7 @@ def train_DCGAN(PATH, device, train_set, name):
     # For each epoch
 
     GAN = GAN_training(train_loader, D, G, device)
-    for i in range(10):
+    for i in range(200):
         print("<======================= Epoch " + str(i+1) + " =======================>")
         GAN.train()
 
@@ -94,12 +95,12 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
 
 def test_modinv(PATH, device, num_classes, target_train, target_model, name):
     size = (1,) + tuple(target_train[0][0].shape)
-    target_model, evaluation_model = load_data(PATH + "_target.pth", PATH + "_target.pth", target_model, target_model)
+    target_model, evaluation_model = load_data(PATH + "_target.pth", PATH + "_eval.pth", target_model, models.resnet18(num_classes=num_classes))
 
     # CCS 15
     modinv_ccs = ccs_inversion(target_model, size, num_classes, 1, 3000, 100, 0.001, 0.003, device)
     train_loader = torch.utils.data.DataLoader(target_train, batch_size=1, shuffle=False)
-    # result = modinv_ccs.reverse_mse(train_loader)
+    ccs_result = modinv_ccs.reverse_mse(train_loader)
 
     # Secret Revealer
 
@@ -170,3 +171,6 @@ if __name__ == "__main__":
     test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, name)
     # test_attrinf(TARGET_PATH, device, num_classes, target_train, target_test, target_model)
     # test_modsteal(TARGET_PATH, device, shadow_train+shadow_test, target_test, target_model, shadow_model)
+
+    # target_model = models.resnet18(num_classes=num_classes)
+    # train_model(TARGET_PATH, device, target_train + shadow_train, target_test + shadow_test, target_model)
