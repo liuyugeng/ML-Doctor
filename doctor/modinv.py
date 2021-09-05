@@ -198,3 +198,23 @@ def load_data(PATH_1, PATH_2, target_model, evaluate_model):
     print("Finished Loading")
 
     return target_model, evaluate_model
+
+def prepare_GAN(data_type, Discriminator, Generator, PATH_1, PATH_2, device):
+    D = Discriminator(ngpu=1).eval()
+    G = Generator(ngpu=1).eval()
+
+    D.load_state_dict(torch.load(PATH_1)).to(device)
+    G.load_state_dict(torch.load(PATH_2)).to(device)
+
+    iden = torch.zeros(10)
+
+    if data_type.lower() == 'cifar100':
+        for i in range(10):
+            iden[i] = i
+
+    else:
+        for i in range(10):
+            iden[i] = 4
+
+    return G, D, iden
+

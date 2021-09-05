@@ -7,6 +7,7 @@ from doctor.modinv import *
 from doctor.attrinf import *
 from doctor.modsteal import *
 from demoloader.train import *
+from demoloader.DCGAN import *
 from utils.define_models import *
 from demoloader.dataloader import *
 
@@ -70,16 +71,18 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
     attack_mode3(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, 
         attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
 
-def test_modinv(PATH, device, num_classes, target_train, target_model):
+def test_modinv(PATH, device, num_classes, target_train, target_model, name):
     size = (1,) + tuple(target_train[0][0].shape)
-    target_model, _ = load_data(PATH + "_target.pth", PATH + "_shadow.pth", target_model, target_model)
+    target_model, evaluation_model = load_data(PATH + "_target.pth", PATH + "_shadow.pth", target_model, target_model)
 
     # CCS 15
-    modinv = ModelInversion(target_model, size, num_classes, 1, 3000, 100, 0.001, 0.003, device)
+    modinv_ccs = ModelInversion(target_model, size, num_classes, 1, 3000, 100, 0.001, 0.003, device)
     train_loader = torch.utils.data.DataLoader(target_train, batch_size=1, shuffle=False)
-    result = modinv.reverse_mse(train_loader)
+    result = modinv_ccs.reverse_mse(train_loader)
 
     # Secret Revealer
+    G, D, iden = prepare_GAN(name, Discriminator, Generator, PATH, PATH, device)
+    modinv_revealer = inversion(G, D, target_model, evaluation_model, iden)
 
 
 def test_attrinf(PATH, device, num_classes, target_train, target_test, target_model):
@@ -132,12 +135,6 @@ if __name__ == "__main__":
 
     # train_model(TARGET_PATH, device, target_train, target_test, target_model)
     # test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
+    test_modinv(TARGET_PATH, device, num_classes, target_train, target_model)
     # test_attrinf(TARGET_PATH, device, num_classes, target_train, target_test, target_model)
     # test_modsteal(TARGET_PATH, device, shadow_train+shadow_test, target_test, target_model, shadow_model)
-
-    test_modinv(TARGET_PATH, device, num_classes, target_train, target_model)
-
-
-    
-
-    
