@@ -53,21 +53,34 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
         train_shadow_model(PATH, device, shadow_model, shadow_trainloader, shadow_testloader, 0, 0, 0, batch_size, loss, optimizer)
 
     # attack_trainloader, attack_testloader = get_attack_dataset_without_shadow(target_train, target_test, batch_size)
-    attack_trainloader, attack_testloader = get_attack_dataset_with_shadow(target_train, target_test, shadow_train, shadow_test, batch_size)
+    attack_trainloader, attack_testloader = get_attack_dataset_with_shadow(
+        target_train, target_test, shadow_train, shadow_test, batch_size)
 
     #for white box
     gradient_size = get_gradient_size(target_model)
     total = gradient_size[0][0] // 2 * gradient_size[0][1] // 2
 
-    
+    # attack_model = ShadowAttackModel(num_classes)
     # attack_model = PartialAttackModel(num_classes)
     attack_model = WhiteBoxAttackModel(num_classes, total)
-    # attack_model = ShadowAttackModel(num_classes)
     
     # attack_mode0(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
     # attack_mode1(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
     # attack_mode2(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
-    attack_mode3(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
+    attack_mode3(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, 
+        attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
+
+def test_modinv(PATH, device, num_classes, target_train, target_model):
+    size = (1,) + tuple(target_train[0][0].shape)
+    target_model, _ = load_data(PATH + "_target.pth", PATH + "_shadow.pth", target_model, target_model)
+
+    # CCS 15
+    modinv = ModelInversion(target_model, size, num_classes, 1, 3000, 100, 0.001, 0.003, device)
+    train_loader = torch.utils.data.DataLoader(target_train, batch_size=1, shuffle=False)
+    result = modinv.reverse_mse(train_loader)
+
+    # Secret Revealer
+
 
 def test_attrinf(PATH, device, num_classes, target_train, target_test, target_model):
     attack_length = int(0.5 * len(target_train))
@@ -82,7 +95,8 @@ def test_attrinf(PATH, device, num_classes, target_train, target_test, target_mo
         attack_test, batch_size=64, shuffle=True, num_workers=2)
 
     image_size = [1] + list(target_train[0][0].shape)
-    train_attack_model(PATH + "_target.pth", PATH, num_classes[1], device, target_model, attack_trainloader, attack_testloader, image_size)
+    train_attack_model(
+        PATH + "_target.pth", PATH, num_classes[1], device, target_model, attack_trainloader, attack_testloader, image_size)
 
 def test_modsteal(PATH, device, train_set, test_set, target_model, attack_model):
     train_loader = torch.utils.data.DataLoader(
@@ -93,7 +107,8 @@ def test_modsteal(PATH, device, train_set, test_set, target_model, attack_model)
     loss = nn.MSELoss()
     optimizer = optim.SGD(attack_model.parameters(), lr=0.01, momentum=0.9)
 
-    attacking = train_steal_model(train_loader, test_loader, target_model, attack_model, PATH + "_target.pth", PATH + "_modsteal.pth", device, 64, loss, optimizer)
+    attacking = train_steal_model(
+        train_loader, test_loader, target_model, attack_model, PATH + "_target.pth", PATH + "_modsteal.pth", device, 64, loss, optimizer)
 
     for i in range(100):
         print("[Epoch %d/%d] attack training"%((i+1), 100))
@@ -118,7 +133,9 @@ if __name__ == "__main__":
     # train_model(TARGET_PATH, device, target_train, target_test, target_model)
     # test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
     # test_attrinf(TARGET_PATH, device, num_classes, target_train, target_test, target_model)
-    test_modsteal(TARGET_PATH, device, shadow_train+shadow_test, target_test, target_model, shadow_model)
+    # test_modsteal(TARGET_PATH, device, shadow_train+shadow_test, target_test, target_model, shadow_model)
+
+    test_modinv(TARGET_PATH, device, num_classes, target_train, target_model)
 
 
     

@@ -32,10 +32,8 @@ class ModelInversion(object):
         :param param_beta, gamma, lambda: the hyperparameters in paper
     '''
 
-    def __init__(self, target_model, input_size, output_size, target_label, param_alpha, param_beta, param_gamma, param_lambda,model_type,dataset_type,device):
-        self.target_model = target_model.eval()
-        self.model_type = model_type
-        self.dataset_type = dataset_type
+    def __init__(self, target_model, input_size, output_size, target_label, param_alpha, param_beta, param_gamma, param_lambda, device):
+        self.target_model = target_model
         self.input_size = input_size
         self.output_size = output_size
         self.target_label = target_label
@@ -44,6 +42,8 @@ class ModelInversion(object):
         self.param_gamma = param_gamma
         self.param_lambda = param_lambda
         self.device = device
+
+        self.target_model.to(self.device).eval()
 
     def model_invert(self):
         current_x = []
@@ -66,7 +66,7 @@ class ModelInversion(object):
     def invert_cost(self, input_x):
         return 1 - self.target_model(input_x.requires_grad_(True))[0][self.target_label]
 
-    def reverse_mse(self, class_avg,class_count):
+    def reverse_mse(self, ori_dataset):
         '''
         output the average MSE value of different classes
 
@@ -78,7 +78,16 @@ class ModelInversion(object):
             self.target_label = i
             a = self.model_invert()
             reverse_data.append(a)
+        class_avg = [Variable(torch.from_numpy(np.zeros(self.input_size, dtype=np.uint8))).float().to(self.device) for _ in range(self.output_size)]
         class_mse = [0 for _ in range(self.output_size)]
+        class_count = [0 for _ in range(self.output_size)]
+
+        for x, y in ori_dataset:
+            x, y = x.to(self.device), y.to(self.device)
+            class_avg[y] = class_avg[y] + x
+            class_count[y] = class_count[y] + 1
+
+
         for i in range(self.output_size):
             class_mse[i] = self.figure_mse(class_avg[i] / class_count[i], (reverse_data[i]))
 
@@ -182,3 +191,10 @@ def inversion(G, D, T, E, iden, device, noise = 100,lr=1e-3, momentum=0.9, lamda
 
 	print("Acc:{:.2f}\t".format(cnt * 1.0 / (bs*10)))
 	return cnt * 1.0 / (bs*10)
+
+def load_data(PATH_1, PATH_2, target_model, evaluate_model):
+    target_model.load_state_dict(torch.load(PATH_1))
+    evaluate_model.load_state_dict(torch.load(PATH_2))
+    print("Finished Loading")
+
+    return target_model, evaluate_model
