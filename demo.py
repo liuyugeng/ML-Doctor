@@ -82,7 +82,7 @@ def test_modinv(PATH, device, num_classes, target_train, target_model, name):
 
     # Secret Revealer
     G, D, iden = prepare_GAN(name, Discriminator, Generator, PATH, PATH, device)
-    modinv_revealer = inversion(G, D, target_model, evaluation_model, iden)
+    modinv_revealer = inversion(G, D, target_model, evaluation_model, iden, device)
 
 
 def test_attrinf(PATH, device, num_classes, target_train, target_test, target_model):

@@ -107,90 +107,91 @@ class ModelInversion(object):
         diff = nn.MSELoss()
         return diff(recover_fig, ori_fig)
 
-		
-		
+        
+        
 
 def inversion(G, D, T, E, iden, device, noise = 100,lr=1e-3, momentum=0.9, lamda=100, iter_times=1500, clip_range=1):
-	'''
-	
-	This model inversion attack was proposed by Zhang et al. in CVPR20
-	"The Secret Revealer: Generative Model-Inversion Attacks Against Deep Neural Networks"
-	'''
-	iden = iden.view(-1).long().to(device)
-	criterion = nn.CrossEntropyLoss().to(device)
-	bs = iden.shape[0]
-	
-	G.eval()
-	D.eval()
-	T.eval()
+    '''
+    
+    This model inversion attack was proposed by Zhang et al. in CVPR20
+    "The Secret Revealer: Generative Model-Inversion Attacks Against Deep Neural Networks"
+    '''
+    iden = iden.view(-1).long().to(device)
+    T, E = T.to(device), E.to(device)
+    criterion = nn.CrossEntropyLoss().to(device)
+    bs = iden.shape[0]
+    
+    G.eval()
+    D.eval()
+    T.eval()
 
-	max_score = torch.zeros(bs)
-	max_iden = torch.zeros(bs)
-	z_hat = torch.zeros(bs, noise,1,1)
+    max_score = torch.zeros(bs)
+    max_iden = torch.zeros(bs)
+    z_hat = torch.zeros(bs, noise,1,1)
 
-	cnt = 0
-	for random_seed_sudo in range(10):
-		tf = time.time()
-		random_seed = random.randint(0,200)
-		torch.manual_seed(random_seed) 
-		torch.cuda.manual_seed(random_seed) 
-		np.random.seed(random_seed) 
-		random.seed(random_seed)
+    cnt = 0
+    for random_seed_sudo in range(10):
+        tf = time.time()
+        random_seed = random.randint(0,200)
+        torch.manual_seed(random_seed) 
+        torch.cuda.manual_seed(random_seed) 
+        np.random.seed(random_seed) 
+        random.seed(random_seed)
 
-		z = torch.randn(bs, noise,1,1).to(device).float()
-		z.requires_grad = True
-		v = torch.zeros(bs, noise,1,1).to(device).float()
-			
-		for i in range(iter_times):
-			fake = G(z)
+        z = torch.randn(bs, noise,1,1).to(device).float()
+        z.requires_grad = True
+        v = torch.zeros(bs, noise,1,1).to(device).float()
+            
+        for i in range(iter_times):
+            fake = G(z)
 
-			label = D(fake)
-			out = T(fake)
-
-
-			if z.grad is not None:
-				z.grad.data.zero_()
-
-			Prior_Loss = - label.mean()
-			Iden_Loss = criterion(out, iden)
-			Total_Loss = Prior_Loss + lamda * Iden_Loss
-
-			Total_Loss.backward()
-			
-			v_prev = v.clone()
-			gradient = z.grad.data
-
-			v = momentum * v - lr * gradient
-			z = z + ( - momentum * v_prev + (1 + momentum) * v)
-			z = torch.clamp(z.detach(), -clip_range, clip_range).float()
-			z.requires_grad = True
-
-			Prior_Loss_val = Prior_Loss.item()
-			Iden_Loss_val = Iden_Loss.item()
-
-			if (i + 1) % 300 == 0:
-				fake_img = G(z.detach())
-				eval_prob = E(fake_img)
-				eval_iden = torch.argmax(eval_prob, dim=1).view(-1)
-				acc = iden.eq(eval_iden.long()).sum().item() * 1.0 / bs
+            label = D(fake)
+            out = T(fake)
 
 
-		fake = G(z)
-		score = T(fake)
-		eval_prob = E(fake)
-		_, eval_iden = torch.max(eval_prob, dim=1)
-		for i in range(bs):
-			_, gtl = torch.max(score, 1)
-			gt = gtl[i].item()
-			if score[i, gt].item() > max_score[i].item():
-				max_score[i] = score[i, gt]
-				max_iden[i] = eval_iden[i]
-				z_hat[i, :] = z[i, :]
-			if eval_iden[i].item() == gt:
-				cnt += 1
+            if z.grad is not None:
+                z.grad.data.zero_()
 
-	print("Acc:{:.2f}\t".format(cnt * 1.0 / (bs*10)))
-	return cnt * 1.0 / (bs*10)
+            Prior_Loss = - label.mean()
+            Iden_Loss = criterion(out, iden)
+            Total_Loss = Prior_Loss + lamda * Iden_Loss
+
+            Total_Loss.backward()
+            
+            v_prev = v.clone()
+            gradient = z.grad.data
+
+            v = momentum * v - lr * gradient
+            z = z + ( - momentum * v_prev + (1 + momentum) * v)
+            z = torch.clamp(z.detach(), -clip_range, clip_range).float()
+            z.requires_grad = True
+
+            Prior_Loss_val = Prior_Loss.item()
+            Iden_Loss_val = Iden_Loss.item()
+
+            if (i + 1) % 300 == 0:
+                fake_img = G(z.detach())
+                eval_prob = E(fake_img)
+                eval_iden = torch.argmax(eval_prob, dim=1).view(-1)
+                acc = iden.eq(eval_iden.long()).sum().item() * 1.0 / bs
+
+
+        fake = G(z)
+        score = T(fake)
+        eval_prob = E(fake)
+        _, eval_iden = torch.max(eval_prob, dim=1)
+        for i in range(bs):
+            _, gtl = torch.max(score, 1)
+            gt = gtl[i].item()
+            if score[i, gt].item() > max_score[i].item():
+                max_score[i] = score[i, gt]
+                max_iden[i] = eval_iden[i]
+                z_hat[i, :] = z[i, :]
+            if eval_iden[i].item() == gt:
+                cnt += 1
+
+    print("Acc:{:.2f}\t".format(cnt * 1.0 / (bs*10)))
+    return cnt * 1.0 / (bs*10)
 
 def load_data(PATH_1, PATH_2, target_model, evaluate_model):
     target_model.load_state_dict(torch.load(PATH_1))
