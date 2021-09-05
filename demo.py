@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
     # train_model(TARGET_PATH, device, target_train, target_test, target_model)
     # test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
-    train_DCGAN(TARGET_PATH, device, target_train + shadow_train, name)
+    train_DCGAN(TARGET_PATH, device, shadow_test + shadow_train, name)
     test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, name)
     # test_attrinf(TARGET_PATH, device, num_classes, target_train, target_test, target_model)
     # test_modsteal(TARGET_PATH, device, shadow_train+shadow_test, target_test, target_model, shadow_model)
