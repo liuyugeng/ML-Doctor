@@ -54,7 +54,7 @@ class model_training():
             print( 'noise_multiplier: %.3f | max_grad_norm: %.3f' % (self.noise_multiplier, self.max_grad_norm))
             privacy_engine.attach(self.optimizer)
 
-        self.scheduler = lr_scheduler.MultiStepLR(self.optimizer, [50, 100], 0.1)
+        self.scheduler = lr_scheduler.MultiStepLR(self.optimizer, [50, 75], 0.1)
 
     # Training
     def train(self):

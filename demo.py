@@ -13,13 +13,13 @@ from utils.define_models import *
 from demoloader.dataloader import *
 
 
-def train_model(PATH, device, train_set, test_set, model):
+def train_model(PATH, device, train_set, test_set, model, use_DP, noise, norm):
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=64, shuffle=True, num_workers=2)
     test_loader = torch.utils.data.DataLoader(
         test_set, batch_size=64, shuffle=True, num_workers=2)
     
-    model = model_training(train_loader, test_loader, model, device, 0, 0, 0)
+    model = model_training(train_loader, test_loader, model, device, use_DP, noise, norm)
     acc_train = 0
     acc_test = 0
 
@@ -153,20 +153,23 @@ def test_modsteal(PATH, device, train_set, test_set, target_model, attack_model)
     print("Saved Target Model!!!\nstolen test acc = %.3f, stolen test agreement = %.3f\n"%(acc_test, agreement_test))
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     device = torch.device("cuda:0")
 
     name = "UTKFace"
     attr = "race"
     root = "../data"
+    use_DP = 1
+    noise = 1.3
+    norm = 1.5
     TARGET_PATH = "./demoloader/trained_model/" + name
 
     num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(name, attr, root)
 
-    # train_model(TARGET_PATH, device, target_train, target_test, target_model)
+    train_model(TARGET_PATH, device, target_train, target_test, target_model, use_DP, noise, norm)
     # test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
-    train_DCGAN(TARGET_PATH, device, shadow_test + shadow_train, name)
-    test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, name)
+    # train_DCGAN(TARGET_PATH, device, shadow_test + shadow_train, name)
+    # test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, name)
     # test_attrinf(TARGET_PATH, device, num_classes, target_train, target_test, target_model)
     # test_modsteal(TARGET_PATH, device, shadow_train+shadow_test, target_test, target_model, shadow_model)
 
