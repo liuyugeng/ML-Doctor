@@ -53,8 +53,6 @@ def train_DCGAN(PATH, device, train_set, name):
         G = Generator(ngpu=1).eval()
 
     print("Starting Training DCGAN...")
-    # For each epoch
-
     GAN = GAN_training(train_loader, D, G, device)
     for i in range(200):
         print("<======================= Epoch " + str(i+1) + " =======================>")
