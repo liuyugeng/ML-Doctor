@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
     num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(name, attr, root)
 
-    train_model(TARGET_PATH, device, target_train, target_test, target_model, use_DP, noise, norm)
+    # train_model(TARGET_PATH, device, target_train, target_test, target_model, use_DP, noise, norm)
     # test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
     # train_DCGAN(TARGET_PATH, device, shadow_test + shadow_train, name)
     # test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, name)
