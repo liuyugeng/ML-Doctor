@@ -167,8 +167,10 @@ def str_to_bool(string):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--gpu', type=str, default="0")
+    parser.add_argument('-a', '--attributes', type=str, default="race")
+    parser.add_argument('-mn', '--model_name', type=str, default="UTKFace")
     parser.add_argument('-at', '--attack_type', type=int, default=0)
-    parser.add_argument('-tm', '--train_model', type=str_to_bool, default=0)
+    parser.add_argument('-tm', '--train_model', type=str_to_bool, default="n")
     parser.add_argument('-ud', '--use_DP', type=int, default=0)
     parser.add_argument('-ne', '--noise', type=float, default=1.3)
     parser.add_argument('-nm', '--norm', type=float, default=1.5)
@@ -178,8 +180,8 @@ def main():
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     device = torch.device("cuda:0")
 
-    name = "UTKFace"
-    attr = "race"
+    name = args.model_name
+    attr = args.attributes
     root = "../data"
     use_DP = args.use_DP
     noise = args.noise
