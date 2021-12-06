@@ -13,4 +13,22 @@ For FMNIST and STL10, PyTorch has offered the dataset and can be easily employed
 Users should install Python3 and PyTorch at first. If you want to train differential privacy shadow models, you should also install the [opacus](https://github.com/pytorch/opacus).
 
 # Testing
-`python demo.py`
+```python demo.py --attack_type 0```
+
+<table><tbody>
+<!-- TABLE BODY -->
+<tr>
+<td align="center">Attack Type</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">3</td>
+</tr>
+<tr>
+<td align="center">Name</td>
+<td align="center">Membership Inference</td>
+<td align="center">Model Inversion</td>
+<td align="center">Model Stealing</td>
+<td align="center">Attribute Inference</td>
+</tr>
+</tbody></table>
