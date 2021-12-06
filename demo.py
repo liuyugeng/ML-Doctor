@@ -1,5 +1,7 @@
 import os
+import sys
 import torch
+import argparse
 import torch.nn as nn
 import torchvision.models as models
 
@@ -152,26 +154,67 @@ def test_modsteal(PATH, device, train_set, test_set, target_model, attack_model)
     acc_test, agreement_test = attacking.test()
     print("Saved Target Model!!!\nstolen test acc = %.3f, stolen test agreement = %.3f\n"%(acc_test, agreement_test))
 
-if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+def str_to_bool(string):
+    if isinstance(string, bool):
+       return string
+    if string.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif string.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-g', '--gpu', type=str, default="0")
+    parser.add_argument('-at', '--attack_type', type=int, default=0)
+    parser.add_argument('-tm', '--train_model', type=str_to_bool, default=0)
+    parser.add_argument('-ud', '--use_DP', type=int, default=0)
+    parser.add_argument('-ne', '--noise', type=float, default=1.3)
+    parser.add_argument('-nm', '--norm', type=float, default=1.5)
+    
+    args = parser.parse_args()
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     device = torch.device("cuda:0")
 
     name = "UTKFace"
     attr = "race"
     root = "../data"
-    use_DP = 1
-    noise = 1.3
-    norm = 1.5
+    use_DP = args.use_DP
+    noise = args.noise
+    norm = args.norm
     TARGET_PATH = "./demoloader/trained_model/" + name
 
     num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(name, attr, root)
 
-    # train_model(TARGET_PATH, device, target_train, target_test, target_model, use_DP, noise, norm)
-    # test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
-    # train_DCGAN(TARGET_PATH, device, shadow_test + shadow_train, name)
-    # test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, name)
-    # test_attrinf(TARGET_PATH, device, num_classes, target_train, target_test, target_model)
-    # test_modsteal(TARGET_PATH, device, shadow_train+shadow_test, target_test, target_model, shadow_model)
+    if args.train_model:
+        train_model(TARGET_PATH, device, target_train, target_test, target_model, use_DP, noise, norm)
+
+    # membership inference
+    if args.attack_type == 0:
+        test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
+
+    # model inversion
+    elif args.attack_type == 1:
+        train_DCGAN(TARGET_PATH, device, shadow_test + shadow_train, name)
+        test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, name)
+
+    # attribut inference
+    elif args.attack_type == 2:
+        test_attrinf(TARGET_PATH, device, num_classes, target_train, target_test, target_model)
+
+    # model stealing
+    elif args.attack_type == 3:
+        test_modsteal(TARGET_PATH, device, shadow_train+shadow_test, target_test, target_model, shadow_model)
+
+    else:
+        sys.exit("we have not supported this mode yet! 0c0")
+
 
     # target_model = models.resnet18(num_classes=num_classes)
     # train_model(TARGET_PATH, device, target_train + shadow_train, target_test + shadow_test, target_model)
+    
+if __name__ == "__main__":
+    main()
+    
