@@ -9,10 +9,10 @@ For CelebA dataset, we have one folder and three files in the "celeba" folder. F
 
 For FMNIST and STL10, PyTorch has offered the dataset and can be easily employed.
 
-# Preparing
+## Preparing
 Users should install Python3 and PyTorch at first. If you want to train differential privacy shadow models, you should also install the [opacus](https://github.com/pytorch/opacus).
 
-# Testing
+## Testing
 ```python demo.py --attack_type 0```
 
 <table><tbody>
@@ -32,3 +32,19 @@ Users should install Python3 and PyTorch at first. If you want to train differen
 <td align="center">Attribute Inference</td>
 </tr>
 </tbody></table>
+
+## Citation
+Please cite this paper in your publications if it helps your research:
+
+    @inproceedings{LWHSZBCFZ22,
+    author = {Yugeng Liu and Rui Wen and Xinlei He and Ahmed Salem and Zhikun Zhang and Michael Backes and Emiliano De Cristofaro and Mario Fritz and Yang Zhang},
+    title = {{ML-Doctor: Holistic Risk Assessment of Inference Attacks Against Machine Learning Models}},
+    booktitle = {{USENIX Security}},
+    publisher = {},
+    year = {2022}
+    }
+
+
+## License
+
+ML-Doctor is freely available for free non-commercial use, and may be redistributed under these conditions. For commercial queries, please drop an e-mail at yugeng.liu[at]cispa[dot]de and cc zhang[[at]cispa[dot]de. We will send the detail agreement to you.
