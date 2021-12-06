@@ -717,7 +717,7 @@ def get_attack_dataset_with_shadow(target_train, target_test, shadow_train, shad
 
     return attack_trainloader, attack_testloader
 
-
+# black shadow
 def attack_mode0(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, get_attack_set, num_classes):
     MODELS_PATH = ATTACK_PATH + "_meminf_attack0.pth"
     RESULT_PATH = ATTACK_PATH + "_meminf_attack0.p"
@@ -741,6 +741,7 @@ def attack_mode0(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainload
 
     return res_train, res_test
 
+# black partial
 def attack_mode1(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, get_attack_set, num_classes):
     MODELS_PATH = ATTACK_PATH + "_meminf_attack1.pth"
     RESULT_PATH = ATTACK_PATH + "_meminf_attack1.p"
@@ -763,6 +764,7 @@ def attack_mode1(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_te
 
     return res_train, res_test
 
+# white partial
 def attack_mode2(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, get_attack_set, num_classes):
     MODELS_PATH = ATTACK_PATH + "_meminf_attack2.pth"
     RESULT_PATH = ATTACK_PATH + "_meminf_attack2.p"
@@ -785,6 +787,7 @@ def attack_mode2(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_te
 
     return res_train, res_test
 
+# white shadow
 def attack_mode3(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, get_attack_set, num_classes):
     MODELS_PATH = ATTACK_PATH + "_meminf_attack3.pth"
     RESULT_PATH = ATTACK_PATH + "_meminf_attack3.p"
