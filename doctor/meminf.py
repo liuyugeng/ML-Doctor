@@ -818,3 +818,4 @@ def get_gradient_size(model):
             gradient_size.append(parameter.shape)
 
     return gradient_size
+    
