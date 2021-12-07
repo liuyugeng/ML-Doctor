@@ -36,12 +36,14 @@ Users should install Python3 and PyTorch at first. If you want to train differen
 ## Citation
 Please cite this paper in your publications if it helps your research:
 
-    @inproceedings{LWHSZBCFZ22,
-    author = {Yugeng Liu and Rui Wen and Xinlei He and Ahmed Salem and Zhikun Zhang and Michael Backes and Emiliano De Cristofaro and Mario Fritz and Yang Zhang},
-    title = {{ML-Doctor: Holistic Risk Assessment of Inference Attacks Against Machine Learning Models}},
-    booktitle = {{USENIX Security}},
-    publisher = {},
-    year = {2022}
+    @inproceedings {277098,
+    title = {{ML-Doctor}: Holistic Risk Assessment of Inference Attacks Against Machine Learning Models},
+    booktitle = {31st USENIX Security Symposium (USENIX Security 22)},
+    year = {2022},
+    address = {Boston, MA},
+    url = {https://www.usenix.org/conference/usenixsecurity22/presentation/liu-yugeng},
+    publisher = {USENIX Association},
+    month = aug,
     }
 
 
