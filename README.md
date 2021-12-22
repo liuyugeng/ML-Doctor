@@ -49,4 +49,4 @@ Please cite this paper in your publications if it helps your research:
 
 ## License
 
-ML-Doctor is freely available for free non-commercial use, and may be redistributed under these conditions. For commercial queries, please drop an e-mail at admin[at]mldoctor[dot]io and cc zhang[at]cispa[dot]de. We will send the detail agreement to you.
+ML-Doctor is freely available for free non-commercial use, and may be redistributed under these conditions. For commercial queries, please drop an e-mail at admin@mldoctor.io. We will send the detail agreement to you.
