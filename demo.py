@@ -69,12 +69,13 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
     # 0: black box shadow model
     # 1: black box partial training
     # 2: white box partial training
-    # 3: white box shadow model (Coz we add this mode after finishing the first three test)
+    # 3: white box shadow model (Coz we add this mode after finishing the first three tests)
     #
     # So, when using black box shadow model (mode 0), attack_model should be ShadowAttackModel.
     # When using black box partial training set (mode 1), attack_model should be PartialAttackModel.
     # (PartialAttackModel and ShadowAttackModel are the same because we found there is no obvious differece when using other models.)
-    # When using white box models (mode 2 and mode 3), attack_model should be WhiteBoxAttackModel
+    # When using white box models (mode 2 and mode 3), attack_model should be WhiteBoxAttackModel.
+    # Users can also define attack models by themselves so we didn't fix the models here.
     #################################################################################################################################
     '''
     batch_size = 64
