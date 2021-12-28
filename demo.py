@@ -71,7 +71,10 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
     # 2: white box partial training
     # 3: white box shadow model (Coz we add this mode after finishing the first three tests)
     #
-    # So, when using black box shadow model (mode 0), attack_model should be ShadowAttackModel.
+    # When using shadow model (mode 0 and mode 3), users should choose get_attack_dataset_with_shadow function.
+    # When using partial training (mode 1 and mode 2), users should choose et_attack_dataset_without_shadow function.
+    #
+    # When using black box shadow model (mode 0), attack_model should be ShadowAttackModel.
     # When using black box partial training set (mode 1), attack_model should be PartialAttackModel.
     # (PartialAttackModel and ShadowAttackModel are the same because we found there is no obvious differece when using other models.)
     # When using white box models (mode 2 and mode 3), attack_model should be WhiteBoxAttackModel.
