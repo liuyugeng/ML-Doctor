@@ -28,12 +28,42 @@ Or directly run ```pip install -r requirements.txt```
 </tr>
 <tr>
 <td align="center">Name</td>
-<td align="center">Membership Inference</td>
-<td align="center">Model Inversion</td>
-<td align="center">Model Stealing</td>
-<td align="center">Attribute Inference</td>
+<td align="center">MemInf</td>
+<td align="center">ModInv</td>
+<td align="center">ModSteal</td>
+<td align="center">AttrInf</td>
 </tr>
 </tbody></table>
+
+For membership inference (MemInf)
+We have four modes in this function
+<table><tbody>
+<!-- TABLE BODY -->
+<tr>
+<td align="center">Attack Mode</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">3</td>
+</tr>
+<tr>
+<td align="center">Name</td>
+<td align="center">black box shadow model</td>
+<td align="center">black box partial training</td>
+<td align="center">white box partial training</td>
+<td align="center">white box shadow model</td>
+</tr>
+</tbody></table>
+Note: We add the last mode after finishing the first three tests.
+
+When using shadow model (mode 0 and mode 3), users should choose [get_attack_dataset_with_shadow](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/doctor/meminf.py#L689) function.
+When using partial training (mode 1 and mode 2), users should choose [get_attack_dataset_without_shadow](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/doctor/meminf.py#L663) function.
+
+When using black box shadow model (mode 0), attack_model should be [ShadowAttackModel](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/utils/define_models.py#L15).
+When using black box partial training set (mode 1), attack_model should be [PartialAttackModel](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/utils/define_models.py#L56).
+(PartialAttackModel and ShadowAttackModel are the same because we found there is no obvious differece when using other models.)
+When using white box models (mode 2 and mode 3), attack_model should be [WhiteBoxAttackModel](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/utils/define_models.py#L97).
+Users can also define attack models by themselves so we didn't fix the models here.
 
 ## Citation
 Please cite this paper in your publications if it helps your research:
