@@ -35,7 +35,7 @@ Or directly run ```pip install -r requirements.txt```
 </tr>
 </tbody></table>
 
-# For membership inference (MemInf)
+#### For membership inference (MemInf)
 We have four modes in this function
 <table><tbody>
 <!-- TABLE BODY -->
@@ -48,10 +48,10 @@ We have four modes in this function
 </tr>
 <tr>
 <td align="center">Name</td>
-<td align="center">black box shadow model</td>
-<td align="center">black box partial training</td>
-<td align="center">white box partial training</td>
-<td align="center">white box shadow model</td>
+<td align="center">BlackBox Shadow</td>
+<td align="center">BlackBox Partial</td>
+<td align="center">WhiteBox Partial</td>
+<td align="center">WhiteBox Shadow</td>
 </tr>
 </tbody></table>
 Note: We add the last mode after finishing the first three tests.
