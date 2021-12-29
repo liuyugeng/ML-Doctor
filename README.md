@@ -56,13 +56,12 @@ We have four modes in this function
 </tbody></table>
 Note: We add the last mode after finishing the first three tests.
 
-When using shadow model (mode 0 and mode 3), users should choose [get_attack_dataset_with_shadow](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/doctor/meminf.py#L689) function.
-When using partial training (mode 1 and mode 2), users should choose [get_attack_dataset_without_shadow](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/doctor/meminf.py#L663) function.
+When using shadow model (mode 0 and mode 3), users should choose [get_attack_dataset_with_shadow](./doctor/meminf.py#L689) function.
+When using partial training (mode 1 and mode 2), users should choose [get_attack_dataset_without_shadow](./meminf.py#L663) function.
 
-When using black box shadow model (mode 0), attack_model should be [ShadowAttackModel](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/utils/define_models.py#L15).
-When using black box partial training set (mode 1), attack_model should be [PartialAttackModel](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/utils/define_models.py#L56).
-(PartialAttackModel and ShadowAttackModel are the same because we found there is no obvious differece when using other models.)
-When using white box models (mode 2 and mode 3), attack_model should be [WhiteBoxAttackModel](https://github.com/liuyugeng/ML-Doctor/blob/fadd06c9d5f7e8707dcc8fdb84ed257050e287a2/utils/define_models.py#L97).
+When using black box shadow model (mode 0), attack_model should be [ShadowAttackModel](./utils/define_models.py#L15).
+When using black box partial training set (mode 1), attack_model should be [PartialAttackModel](./utils/define_models.py#L56).
+When using white box models (mode 2 and mode 3), attack_model should be [WhiteBoxAttackModel](./utils/define_models.py#L97).
 Users can also define attack models by themselves so we didn't fix the models here.
 
 ## Citation
