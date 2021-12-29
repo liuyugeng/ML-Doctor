@@ -60,9 +60,9 @@ When using mode 0 and mode 3, users should choose [get_attack_dataset_with_shado
 When using mode 1 and mode 2, users should choose [get_attack_dataset_without_shadow](./meminf.py#L663) function.
 
 #### When choosing attack model
-When using mode 0, attack_model should be [ShadowAttackModel](./utils/define_models.py#L15).
-When using mode 1, attack_model should be [PartialAttackModel](./utils/define_models.py#L56).
-When using mode 2 and mode 3, attack_model should be [WhiteBoxAttackModel](./utils/define_models.py#L97).
+When using mode 0, ```attack_model``` should be [ShadowAttackModel](./utils/define_models.py#L15).
+When using mode 1, ```attack_model``` should be [PartialAttackModel](./utils/define_models.py#L56).
+When using mode 2 and mode 3, ```attack_model``` should be [WhiteBoxAttackModel](./utils/define_models.py#L97).
 Users can also define attack models by themselves so we didn't fix the models here.
 
 ## Citation
