@@ -35,12 +35,12 @@ Or directly run ```pip install -r requirements.txt```
 </tr>
 </tbody></table>
 
-For membership inference (MemInf)
+# For membership inference (MemInf)
 We have four modes in this function
 <table><tbody>
 <!-- TABLE BODY -->
 <tr>
-<td align="center">Attack Mode</td>
+<td align="center">Mode</td>
 <td align="center">0</td>
 <td align="center">1</td>
 <td align="center">2</td>
