@@ -56,8 +56,8 @@ We have four modes in this function
 </tbody></table>
 
 #### When buliding attack dataset
-When using mode 0 and mode 3, users should choose [get_attack_dataset_with_shadow](./doctor/meminf.py#L689) function.
-When using mode 1 and mode 2, users should choose [get_attack_dataset_without_shadow](./meminf.py#L663) function.
+When using mode 0 and mode 3, users should choose [```get_attack_dataset_with_shadow```](./doctor/meminf.py#L689) function.
+When using mode 1 and mode 2, users should choose [```get_attack_dataset_without_shadow```](./meminf.py#L663) function.
 
 #### When choosing attack model
 When using mode 0, ```attack_model``` should be [ShadowAttackModel](./utils/define_models.py#L15).
@@ -69,7 +69,7 @@ Users can also define attack models by themselves so we didn't fix the models he
 We have provide two attacks in the pipeline. So no need to modify anything.
 
 ### For AttrInf and ModSteal
-There are two mode in general, i.e. Partial and Shadow. Users could change the training set in [```main``` function](./demo.py#L225-L229)
+There are two mode in general, i.e. Partial and Shadow. Users could change the training set in [```main```](./demo.py#L225-L229) function
 
 
 ## Citation
