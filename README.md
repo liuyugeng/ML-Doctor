@@ -69,7 +69,7 @@ Users can also define attack models by themselves so we didn't fix the models he
 We have provide two attacks in the pipeline. So no need to modify anything.
 
 ### For AttrInf and ModSteal
-There are two mode in general, i.e. Partial and Shadow. Users could change the training set in [```main```](./demo.py#L225-L229) function
+There are two modes in general, i.e. Partial and Shadow. Users could change the training set in [```main```](./demo.py#L225-L229) function
 
 
 ## Citation
