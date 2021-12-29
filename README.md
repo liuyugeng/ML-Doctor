@@ -55,13 +55,14 @@ We have four modes in this function
 </tr>
 </tbody></table>
 
+#### When buliding attack dataset
+When using mode 0 and mode 3, users should choose [get_attack_dataset_with_shadow](./doctor/meminf.py#L689) function.
+When using mode 1 and mode 2, users should choose [get_attack_dataset_without_shadow](./meminf.py#L663) function.
 
-When using shadow model (mode 0 and mode 3), users should choose [get_attack_dataset_with_shadow](./doctor/meminf.py#L689) function.
-When using partial training (mode 1 and mode 2), users should choose [get_attack_dataset_without_shadow](./meminf.py#L663) function.
-
-When using black box shadow model (mode 0), attack_model should be [ShadowAttackModel](./utils/define_models.py#L15).
-When using black box partial training set (mode 1), attack_model should be [PartialAttackModel](./utils/define_models.py#L56).
-When using white box models (mode 2 and mode 3), attack_model should be [WhiteBoxAttackModel](./utils/define_models.py#L97).
+#### When choosing attack model
+When using mode 0, attack_model should be [ShadowAttackModel](./utils/define_models.py#L15).
+When using mode 1, attack_model should be [PartialAttackModel](./utils/define_models.py#L56).
+When using mode 2 and mode 3, attack_model should be [WhiteBoxAttackModel](./utils/define_models.py#L97).
 Users can also define attack models by themselves so we didn't fix the models here.
 
 ## Citation
