@@ -54,7 +54,7 @@ We have four modes in this function
 <td align="center">WhiteBox Shadow</td>
 </tr>
 </tbody></table>
-Note: We add the last mode after finishing the first three tests.
+
 
 When using shadow model (mode 0 and mode 3), users should choose [get_attack_dataset_with_shadow](./doctor/meminf.py#L689) function.
 When using partial training (mode 1 and mode 2), users should choose [get_attack_dataset_without_shadow](./meminf.py#L663) function.
