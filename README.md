@@ -35,7 +35,7 @@ Or directly run ```pip install -r requirements.txt```
 </tr>
 </tbody></table>
 
-### For membership inference (MemInf)
+### For MemInf
 We have four modes in this function
 <table><tbody>
 <!-- TABLE BODY -->
@@ -64,6 +64,13 @@ When using mode 0, ```attack_model``` should be [ShadowAttackModel](./utils/defi
 When using mode 1, ```attack_model``` should be [PartialAttackModel](./utils/define_models.py#L56).
 When using mode 2 and mode 3, ```attack_model``` should be [WhiteBoxAttackModel](./utils/define_models.py#L97).
 Users can also define attack models by themselves so we didn't fix the models here.
+
+### For ModInv
+We have provide two attacks in the pipeline. So no need to modify anything.
+
+### For AttrInf and ModSteal
+There are two mode in general, i.e. Partial and Shadow. Users could change the training set in [```main``` function](./demo.py#L225-L229)
+
 
 ## Citation
 Please cite this paper in your publications if it helps your research:
