@@ -35,7 +35,7 @@ Or directly run ```pip install -r requirements.txt```
 </tr>
 </tbody></table>
 
-#### For membership inference (MemInf)
+### For membership inference (MemInf)
 We have four modes in this function
 <table><tbody>
 <!-- TABLE BODY -->
