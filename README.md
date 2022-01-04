@@ -57,14 +57,15 @@ We have four modes in this function
 </tbody></table>
 
 #### When buliding attack dataset
-When using mode 0 and mode 3, users should choose [```get_attack_dataset_with_shadow```](./doctor/meminf.py#L689) function.
-When using mode 1 and mode 2, users should choose [```get_attack_dataset_without_shadow```](./meminf.py#L663) function.
+When using mode 0 and mode 3, i.e. having shadow models, users should choose [```get_attack_dataset_with_shadow```](./doctor/meminf.py#L689) function.
+For the others(mode 1 and mode 2), it should be [```get_attack_dataset_without_shadow```](./meminf.py#L663) function.
 
 #### When choosing attack model
-When using mode 0, ```attack_model``` should be [```ShadowAttackModel```](./utils/define_models.py#L15).
-When using mode 1, ```attack_model``` should be [```PartialAttackModel```](./utils/define_models.py#L56).
-When using mode 2 and mode 3, ```attack_model``` should be [```WhiteBoxAttackModel```](./utils/define_models.py#L97).
+When using mode 0, ```attack_model``` should be [```ShadowAttackModel```](./utils/define_models.py#L15), while [```PartialAttackModel```](./utils/define_models.py#L56) is  ```attack_model``` for mode 1 in blackbox.
+As for whitebox(mode 2 and mode 3), users need to change ```attack_model``` to [```WhiteBoxAttackModel```](./utils/define_models.py#L97).
 Users can also define attack models by themselves so we didn't fix the models here.
+
+Note: we have the same [```ShadowAttackModel```](./utils/define_models.py#L15) and [```PartialAttackModel```](./utils/define_models.py#L56) in the code.
 
 ### For ModInv
 We have provide two attacks in the pipeline. So no need to modify anything.
