@@ -68,7 +68,7 @@ Users can also define attack models by themselves so we didn't fix the models he
 Note: we have the same [```ShadowAttackModel```](./utils/define_models.py#L15) and [```PartialAttackModel```](./utils/define_models.py#L56) in the code.
 
 ### For ModInv
-For Secret Revealer method, users should train an evaluation model with ResNet18 architecture and name it as your model name + "_eval.pth", e.g. "UTKFace_eval.pth" with the same path as target model.
+For Secret Revealer method, users should pre-train an evaluation model with ResNet18 architecture and name it as your model name + "_eval.pth", e.g. "UTKFace_eval.pth" with the same path as target model.
 
 ### For AttrInf and ModSteal
 There are two modes in general, i.e. Partial and Shadow. Users could change the training set in [```main```](./demo.py#L225-L229) function
