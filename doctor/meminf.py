@@ -218,18 +218,20 @@ class attack_for_blackbox():
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(self.attack_model.parameters(), lr=1e-5)
 
-    def _get_data(self, model, inputs):
+    def _get_data(self, model, inputs, targets):
         result = model(inputs)
         
         output, _ = torch.sort(result, descending=True)
         # results = F.softmax(results[:,:5], dim=1)
         _, predicts = result.max(1)
-        
-        prediction = []
-        for predict in predicts:
-            prediction.append([1,] if predict else [0,])
 
-        prediction = torch.Tensor(prediction)
+        prediction = predicts.eq(targets).float()
+        
+        # prediction = []
+        # for predict in predicts:
+        #     prediction.append([1,] if predict else [0,])
+
+        # prediction = torch.Tensor(prediction)
 
         # final_inputs = torch.cat((results, prediction), 1)
         # print(final_inputs.shape)
@@ -240,7 +242,7 @@ class attack_for_blackbox():
         with open(self.ATTACK_SETS + "train.p", "wb") as f:
             for inputs, targets, members in self.attack_train_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                output, prediction = self._get_data(self.shadow_model, inputs)
+                output, prediction = self._get_data(self.shadow_model, inputs, targets)
                 # output = output.cpu().detach().numpy()
             
                 pickle.dump((output, prediction, members), f)
@@ -250,7 +252,7 @@ class attack_for_blackbox():
         with open(self.ATTACK_SETS + "test.p", "wb") as f:
             for inputs, targets, members in self.attack_test_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                output, prediction = self._get_data(self.target_model, inputs)
+                output, prediction = self._get_data(self.target_model, inputs, targets)
                 # output = output.cpu().detach().numpy()
             
                 pickle.dump((output, prediction, members), f)
