@@ -9,8 +9,6 @@ np.set_printoptions(threshold=np.inf)
 
 from opacus import PrivacyEngine
 from torch.optim import lr_scheduler
-from opacus.utils import module_modification
-from opacus.dp_model_inspector import DPModelInspector
 
 def GAN_init(m):
     classname = m.__class__.__name__
@@ -22,9 +20,10 @@ def GAN_init(m):
 
 
 class model_training():
-    def __init__(self, trainloader, testloader, model, device, use_DP, noise, norm):
+    def __init__(self, trainloader, testloader, model, device, use_DP, noise, norm, delta):
         self.use_DP = use_DP
         self.device = device
+        self.delta = delta
         self.net = model.to(self.device)
         self.trainloader = trainloader
         self.testloader = testloader
@@ -39,20 +38,28 @@ class model_training():
         self.noise_multiplier, self.max_grad_norm = noise, norm
         
         if self.use_DP:
-            self.net = module_modification.convert_batchnorm_modules(self.net)
-            inspector = DPModelInspector()
-            inspector.validate(self.net)
-            privacy_engine = PrivacyEngine(
-                self.net,
-                batch_size=64,
-                sample_size=len(self.trainloader.dataset),
-                alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
+            self.privacy_engine = PrivacyEngine()
+            self.model, self.optimizer, self.trainloader = self.privacy_engine.make_private(
+                module=model,
+                optimizer=self.optimizer,
+                data_loader=self.trainloader,
                 noise_multiplier=self.noise_multiplier,
                 max_grad_norm=self.max_grad_norm,
-                secure_rng=False,
             )
+            # self.net = module_modification.convert_batchnorm_modules(self.net)
+            # inspector = DPModelInspector()
+            # inspector.validate(self.net)
+            # privacy_engine = PrivacyEngine(
+            #     self.net,
+            #     batch_size=64,
+            #     sample_size=len(self.trainloader.dataset),
+            #     alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
+            #     noise_multiplier=self.noise_multiplier,
+            #     max_grad_norm=self.max_grad_norm,
+            #     secure_rng=False,
+            # )
             print( 'noise_multiplier: %.3f | max_grad_norm: %.3f' % (self.noise_multiplier, self.max_grad_norm))
-            privacy_engine.attach(self.optimizer)
+            # privacy_engine.attach(self.optimizer)
 
         self.scheduler = lr_scheduler.MultiStepLR(self.optimizer, [50, 75], 0.1)
 
@@ -88,7 +95,8 @@ class model_training():
             correct += predicted.eq(targets).sum().item()
 
         if self.use_DP:
-            epsilon, best_alpha = self.optimizer.privacy_engine.get_privacy_spent(1e-5)
+            epsilon, best_alpha = self.privacy_engine.accountant.get_privacy_spent(delta=self.delta)
+            # epsilon, best_alpha = self.optimizer.privacy_engine.get_privacy_spent(1e-5)
             print("\u03B1: %.3f \u03B5: %.3f \u03B4: 1e-5" % (best_alpha, epsilon))
                 
         self.scheduler.step()

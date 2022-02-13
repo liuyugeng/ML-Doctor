@@ -11,9 +11,7 @@ np.set_printoptions(threshold=np.inf)
 
 from opacus import PrivacyEngine
 from torch.optim import lr_scheduler
-from opacus.utils import module_modification
 from sklearn.metrics import f1_score, roc_auc_score
-from opacus.dp_model_inspector import DPModelInspector
 
 
 def weights_init(m):
@@ -25,7 +23,8 @@ def weights_init(m):
         nn.init.constant_(m.bias, 0)
 
 class shadow():
-    def __init__(self, trainloader, testloader, model, device, use_DP, noise, norm, batch_size, loss, optimizer):
+    def __init__(self, trainloader, testloader, model, device, use_DP, noise, norm, loss, optimizer, delta):
+        self.delta = delta
         self.use_DP = use_DP
         self.device = device
         self.model = model.to(self.device)
@@ -38,20 +37,28 @@ class shadow():
         self.noise_multiplier, self.max_grad_norm = noise, norm
         
         if self.use_DP:
-            self.model = module_modification.convert_batchnorm_modules(self.model)
-            inspector = DPModelInspector()
-            inspector.validate(self.model)
-            privacy_engine = PrivacyEngine(
-                self.model,
-                batch_size=batch_size,
-                sample_size=len(self.trainloader.dataset),
-                alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
+            self.privacy_engine = PrivacyEngine()
+            self.model, self.optimizer, self.trainloader = self.privacy_engine.make_private(
+                module=self.model,
+                optimizer=self.optimizer,
+                data_loader=self.trainloader,
                 noise_multiplier=self.noise_multiplier,
                 max_grad_norm=self.max_grad_norm,
-                secure_rng=False,
             )
+            # self.model = module_modification.convert_batchnorm_modules(self.model)
+            # inspector = DPModelInspector()
+            # inspector.validate(self.model)
+            # privacy_engine = PrivacyEngine(
+            #     self.model,
+            #     batch_size=batch_size,
+            #     sample_size=len(self.trainloader.dataset),
+            #     alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
+            #     noise_multiplier=self.noise_multiplier,
+            #     max_grad_norm=self.max_grad_norm,
+            #     secure_rng=False,
+            # )
             print( 'noise_multiplier: %.3f | max_grad_norm: %.3f' % (self.noise_multiplier, self.max_grad_norm))
-            privacy_engine.attach(self.optimizer)
+            # privacy_engine.attach(self.optimizer)
 
         self.scheduler = lr_scheduler.MultiStepLR(self.optimizer, [50, 100], 0.1)
 
@@ -80,7 +87,8 @@ class shadow():
             correct += predicted.eq(targets).sum().item()
 
         if self.use_DP:
-            epsilon, best_alpha = self.optimizer.privacy_engine.get_privacy_spent(1e-5)
+            epsilon, best_alpha = self.privacy_engine.accountant.get_privacy_spent(delta=self.delta)
+            # epsilon, best_alpha = self.optimizer.privacy_engine.get_privacy_spent(1e-5)
             print("\u03B1: %.3f \u03B5: %.3f \u03B4: 1e-5" % (best_alpha, epsilon))
                 
         self.scheduler.step()
@@ -612,8 +620,8 @@ class attack_for_whitebox():
         torch.save(self.attack_model.state_dict(), path)
 
 
-def train_shadow_model(PATH, device, shadow_model, train_loader, test_loader, use_DP, noise, norm, batch_size, loss, optimizer):
-    model = shadow(train_loader, test_loader, shadow_model, device, use_DP, noise, norm, batch_size, loss, optimizer)
+def train_shadow_model(PATH, device, shadow_model, train_loader, test_loader, use_DP, noise, norm, loss, optimizer, delta):
+    model = shadow(train_loader, test_loader, shadow_model, device, use_DP, noise, norm, loss, optimizer, delta)
     acc_train = 0
     acc_test = 0
 

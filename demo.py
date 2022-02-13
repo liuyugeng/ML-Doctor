@@ -15,13 +15,13 @@ from utils.define_models import *
 from demoloader.dataloader import *
 
 
-def train_model(PATH, device, train_set, test_set, model, use_DP, noise, norm):
+def train_model(PATH, device, train_set, test_set, model, use_DP, noise, norm, delta):
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=64, shuffle=True, num_workers=2)
     test_loader = torch.utils.data.DataLoader(
         test_set, batch_size=64, shuffle=True, num_workers=2)
     
-    model = model_training(train_loader, test_loader, model, device, use_DP, noise, norm)
+    model = model_training(train_loader, test_loader, model, device, use_DP, noise, norm, delta)
     acc_train = 0
     acc_test = 0
 
@@ -62,9 +62,9 @@ def train_DCGAN(PATH, device, train_set, name):
 
     GAN.saveModel(PATH + "_discriminator.pth", PATH + "_generator.pth")
 
-def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model):
+def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model, train_shadow, use_DP, noise, norm, delta):
     batch_size = 64
-    if shadow_model:
+    if train_shadow:
         shadow_trainloader = torch.utils.data.DataLoader(
             shadow_train, batch_size=batch_size, shuffle=True, num_workers=2)
         shadow_testloader = torch.utils.data.DataLoader(
@@ -72,8 +72,7 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
 
         loss = nn.CrossEntropyLoss()
         optimizer = optim.SGD(shadow_model.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-4)
-        
-        train_shadow_model(PATH, device, shadow_model, shadow_trainloader, shadow_testloader, 0, 0, 0, batch_size, loss, optimizer)
+        train_shadow_model(PATH, device, shadow_model, shadow_trainloader, shadow_testloader, use_DP, noise, norm, loss, optimizer, delta)
 
     # attack_trainloader, attack_testloader = get_attack_dataset_without_shadow(target_train, target_test, batch_size)
     attack_trainloader, attack_testloader = get_attack_dataset_with_shadow(
@@ -170,10 +169,12 @@ def main():
     parser.add_argument('-a', '--attributes', type=str, default="race")
     parser.add_argument('-mn', '--model_name', type=str, default="UTKFace")
     parser.add_argument('-at', '--attack_type', type=int, default=0)
-    parser.add_argument('-tm', '--train_model', type=str_to_bool, default="n")
-    parser.add_argument('-ud', '--use_DP', type=int, default=0)
+    parser.add_argument('-tm', '--train_model', action='store_true')
+    parser.add_argument('-ts', '--train_shadow', action='store_true')
+    parser.add_argument('-ud', '--use_DP', action='store_true',)
     parser.add_argument('-ne', '--noise', type=float, default=1.3)
     parser.add_argument('-nm', '--norm', type=float, default=1.5)
+    parser.add_argument('-d', '--delta', type=float, default=1e-5)
     
     args = parser.parse_args()
 
@@ -186,16 +187,18 @@ def main():
     use_DP = args.use_DP
     noise = args.noise
     norm = args.norm
+    delta = args.delta
+    train_shadow = args.train_shadow
     TARGET_PATH = "./demoloader/trained_model/" + name
 
     num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(name, attr, root)
 
     if args.train_model:
-        train_model(TARGET_PATH, device, target_train, target_test, target_model, use_DP, noise, norm)
+        train_model(TARGET_PATH, device, target_train, target_test, target_model, use_DP, noise, norm, delta)
 
     # membership inference
     if args.attack_type == 0:
-        test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model)
+        test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model, train_shadow, use_DP, noise, norm, delta)
 
     # model inversion
     elif args.attack_type == 1:
@@ -216,7 +219,7 @@ def main():
 
     # target_model = models.resnet18(num_classes=num_classes)
     # train_model(TARGET_PATH, device, target_train + shadow_train, target_test + shadow_test, target_model)
-    
+
 if __name__ == "__main__":
     main()
     
