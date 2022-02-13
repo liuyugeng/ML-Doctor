@@ -11,9 +11,9 @@ For CelebA dataset, we have one folder and three files in the "celeba" folder. F
 For FMNIST and STL10, PyTorch has offered the datasets and they can be easily employed.
 
 ## Preparing
-Users should install Python3 and PyTorch at first. If you want to train differential privacy shadow models, you should also install [opacus](https://github.com/pytorch/opacus).
+Users should install Python3 and PyTorch at first. If you want to train differential privacy shadow models, you should also install [opacus](https://github.com/pytorch/opacus). We recommend using conda to install it based on the official documents.
 
-Or directly run ```pip install -r requirements.txt```
+Or directly run ```pip install -r requirements.txt```.
 
 ## Testing
 ```python demo.py --attack_type 0```
