@@ -166,7 +166,7 @@ def str_to_bool(string):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--gpu', type=str, default="0")
-    parser.add_argument('-a', '--attributes', type=str, default="race")
+    parser.add_argument('-a', '--attributes', type=str, default="race", help="For attrinf, two attributes should be in format x_y e.g. race_gender")
     parser.add_argument('-dn', '--dataset_name', type=str, default="UTKFace")
     parser.add_argument('-at', '--attack_type', type=int, default=0)
     parser.add_argument('-tm', '--train_model', action='store_true')
@@ -183,6 +183,8 @@ def main():
 
     dataset_name = args.dataset_name
     attr = args.attributes
+    if "_" in attr:
+        attr = attr.split("_")
     root = "../data"
     use_DP = args.use_DP
     noise = args.noise
