@@ -43,7 +43,8 @@ class UTKFaceDataset(torch.utils.data.Dataset):
         self.root = root
         self.transform = transform
         self.target_transform = target_transform
-        self.files = os.listdir(root+'/UTKFace/processed/')
+        self.processed_path = os.path.join(self.root, 'UTKFace/processed/')
+        self.files = os.listdir(self.processed_path)
         if isinstance(attr, list):
             self.attr = attr
         else:
@@ -51,12 +52,13 @@ class UTKFaceDataset(torch.utils.data.Dataset):
 
         self.lines = []
         for txt_file in self.files:
-            with open(self.root+'/UTKFace/processed/' + txt_file, 'r') as f:
+            txt_file_path = os.path.join(self.processed_path, txt_file)
+            with open(txt_file_path, 'r') as f:
                 assert f is not None
                 for i in f:
                     image_name = i.split('jpg ')[0]
                     attrs = image_name.split('_')
-                    if len(attrs) < 4 or int(attrs[2]) >= 4:
+                    if len(attrs) < 4 or int(attrs[2]) >= 4  or '' in attrs:
                         continue
                     self.lines.append(image_name+'jpg')
 
@@ -71,7 +73,7 @@ class UTKFaceDataset(torch.utils.data.Dataset):
         gender = int(attrs[1])
         race = int(attrs[2])
 
-        image_path = os.path.join(self.root+'/UTKFace/raw', self.lines[index]+'.chip.jpg').rstrip()
+        image_path = os.path.join(self.root, 'UTKFace/raw/', self.lines[index]+'.chip.jpg').rstrip()
 
         image = Image.open(image_path).convert('RGB')
 

@@ -167,7 +167,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--gpu', type=str, default="0")
     parser.add_argument('-a', '--attributes', type=str, default="race")
-    parser.add_argument('-mn', '--model_name', type=str, default="UTKFace")
+    parser.add_argument('-dn', '--dataset_name', type=str, default="UTKFace")
     parser.add_argument('-at', '--attack_type', type=int, default=0)
     parser.add_argument('-tm', '--train_model', action='store_true')
     parser.add_argument('-ts', '--train_shadow', action='store_true')
@@ -181,7 +181,7 @@ def main():
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     device = torch.device("cuda:0")
 
-    name = args.model_name
+    dataset_name = args.dataset_name
     attr = args.attributes
     root = "../data"
     use_DP = args.use_DP
@@ -189,9 +189,9 @@ def main():
     norm = args.norm
     delta = args.delta
     train_shadow = args.train_shadow
-    TARGET_PATH = "./demoloader/trained_model/" + name
+    TARGET_PATH = "./demoloader/trained_model/" + dataset_name
 
-    num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(name, attr, root)
+    num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(dataset_name, attr, root)
 
     if args.train_model:
         train_model(TARGET_PATH, device, target_train, target_test, target_model, use_DP, noise, norm, delta)
@@ -202,8 +202,8 @@ def main():
 
     # model inversion
     elif args.attack_type == 1:
-        train_DCGAN(TARGET_PATH, device, shadow_test + shadow_train, name)
-        test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, name)
+        train_DCGAN(TARGET_PATH, device, shadow_test + shadow_train, dataset_name)
+        test_modinv(TARGET_PATH, device, num_classes, target_train, target_model, dataset_name)
 
     # attribut inference
     elif args.attack_type == 2:
@@ -219,7 +219,7 @@ def main():
 
     # target_model = models.resnet18(num_classes=num_classes)
     # train_model(TARGET_PATH, device, target_train + shadow_train, target_test + shadow_test, target_model)
-
+    
 if __name__ == "__main__":
     main()
     
