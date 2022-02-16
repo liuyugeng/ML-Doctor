@@ -31,10 +31,13 @@ Or directly run ```pip install -r requirements.txt```.
 <td align="center">Name</td>
 <td align="center">MemInf</td>
 <td align="center">ModInv</td>
-<td align="center">ModSteal</td>
 <td align="center">AttrInf</td>
+<td align="center">ModSteal</td>
 </tr>
 </tbody></table>
+
+For AttrInf, users should provide two attributes in the command line with the format "X_Y", e.g. 
+```python demo.py --attack_type 2 --dataset_name UTKFace --attributes race_gender```
 
 ### For MemInf
 We have four modes in this function
