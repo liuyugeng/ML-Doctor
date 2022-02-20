@@ -16,7 +16,7 @@ Users should install Python3 and PyTorch at first. If you want to train differen
 Or directly run ```pip install -r requirements.txt```.
 
 ## Testing
-```python demo.py --attack_type X --dataset_name UTKFace Y```
+```python demo.py --attack_type X --dataset_name Y```
 
 <table><tbody>
 <!-- TABLE BODY -->
@@ -33,6 +33,17 @@ Or directly run ```pip install -r requirements.txt```.
 <td align="center">ModInv</td>
 <td align="center">AttrInf</td>
 <td align="center">ModSteal</td>
+</tr>
+</tbody></table>
+
+<table><tbody>
+<!-- TABLE BODY -->
+<tr>
+<td align="center">Dataset Name</td>
+<td align="center">CelebA</td>
+<td align="center">FMNIST (Fashion-MNIST)</td>
+<td align="center">STL10</td>
+<td align="center">UTKFace</td>
 </tr>
 </tbody></table>
 
