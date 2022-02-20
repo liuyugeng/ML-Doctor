@@ -16,7 +16,7 @@ Users should install Python3 and PyTorch at first. If you want to train differen
 Or directly run ```pip install -r requirements.txt```.
 
 ## Testing
-```python demo.py --attack_type 0```
+```python demo.py --attack_type X --dataset_name UTKFace Y```
 
 <table><tbody>
 <!-- TABLE BODY -->
