@@ -47,6 +47,9 @@ Or directly run ```pip install -r requirements.txt```.
 </tr>
 </tbody></table>
 
+|   |   |   |   |   |
+|Dataset Name|CelebA|FMNIST (Fashion-MNIST)|STL10|UTKFace|
+
 For AttrInf, users should provide two attributes in the command line with the format "X_Y", e.g. 
 ```python demo.py --attack_type 2 --dataset_name UTKFace --attributes race_gender```
 
