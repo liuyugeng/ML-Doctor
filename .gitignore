@@ -1,0 +1,6 @@
+__pycache__
+demoloader/__pycache_
+demoloader/trained_model
+demoloader/log
+doctor/__pycache_
+utils/__pycache_
