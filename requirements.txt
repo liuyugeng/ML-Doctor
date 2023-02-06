@@ -3,3 +3,6 @@ torch
 scipy
 opacus
 torchvision
+scikit-learn
+tqdm
+pandas
