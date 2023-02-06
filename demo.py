@@ -48,8 +48,8 @@ def train_DCGAN(PATH, device, train_set, name):
         train_set, batch_size=128, shuffle=True, num_workers=2)
 
     if name.lower() == 'fmnist':
-        D = FashionDiscriminator(ngpu=1).eval()
-        G = FashionGenerator(ngpu=1).eval()
+        D = FashionDiscriminator().eval()
+        G = FashionGenerator().eval()
     else:
         D = Discriminator(ngpu=1).eval()
         G = Generator(ngpu=1).eval()
@@ -191,7 +191,11 @@ def main():
     norm = args.norm
     delta = args.delta
     train_shadow = args.train_shadow
-    TARGET_PATH = "./demoloader/trained_model/" + dataset_name
+    TARGET_ROOT = "./demoloader/trained_model/"
+    if not os.path.exists(TARGET_ROOT):
+        print(f"Create directory named {TARGET_ROOT}")
+        os.makedirs(TARGET_ROOT)
+    TARGET_PATH = TARGET_ROOT + dataset_name
 
     num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(dataset_name, attr, root)
 
