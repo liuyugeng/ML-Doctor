@@ -62,7 +62,7 @@ def train_DCGAN(PATH, device, train_set, name):
 
     GAN.saveModel(PATH + "_discriminator.pth", PATH + "_generator.pth")
 
-def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model, train_shadow, use_DP, noise, norm, delta):
+def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model, train_shadow, use_DP, noise, norm, delta, mode):
     batch_size = 64
     if train_shadow:
         shadow_trainloader = torch.utils.data.DataLoader(
@@ -73,24 +73,41 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
         loss = nn.CrossEntropyLoss()
         optimizer = optim.SGD(shadow_model.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-4)
         train_shadow_model(PATH, device, shadow_model, shadow_trainloader, shadow_testloader, use_DP, noise, norm, loss, optimizer, delta)
+    if mode == 2 or mode == 3:
+        attack_trainloader, attack_testloader = get_attack_dataset_with_shadow(
+            target_train, target_test, shadow_train, shadow_test, batch_size)
+    else:
+        attack_trainloader, attack_testloader = get_attack_dataset_without_shadow(target_train, target_test, batch_size)
 
-    # attack_trainloader, attack_testloader = get_attack_dataset_without_shadow(target_train, target_test, batch_size)
-    attack_trainloader, attack_testloader = get_attack_dataset_with_shadow(
-        target_train, target_test, shadow_train, shadow_test, batch_size)
 
     #for white box
-    gradient_size = get_gradient_size(target_model)
-    total = gradient_size[0][0] // 2 * gradient_size[0][1] // 2
+    if mode == 2 or mode == 3:
+        gradient_size = get_gradient_size(target_model)
+        total = gradient_size[0][0] // 2 * gradient_size[0][1] // 2
 
-    # attack_model = ShadowAttackModel(num_classes)
-    # attack_model = PartialAttackModel(num_classes)
-    attack_model = WhiteBoxAttackModel(num_classes, total)
+    if mode == 0:
+        attack_model = ShadowAttackModel(num_classes)
+        attack_mode0(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
+
+    elif mode == 1:
+        attack_model = PartialAttackModel(num_classes)
+        attack_mode1(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
+
+    elif mode == 2:
+        attack_model = WhiteBoxAttackModel(num_classes, total)
+        attack_mode2(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
+
+    elif mode == 3:
+        attack_model = WhiteBoxAttackModel(num_classes, total)
+        attack_mode3(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, 
+            attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
+    else:
+        exit("wrong mode!!!")
     
     # attack_mode0(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
     # attack_mode1(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
     # attack_mode2(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
-    attack_mode3(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, 
-        attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
+    
 
 def test_modinv(PATH, device, num_classes, target_train, target_model, name):
     size = (1,) + tuple(target_train[0][0].shape)
@@ -175,6 +192,7 @@ def main():
     parser.add_argument('-ne', '--noise', type=float, default=1.3)
     parser.add_argument('-nm', '--norm', type=float, default=1.5)
     parser.add_argument('-d', '--delta', type=float, default=1e-5)
+    parser.add_argument('-m', '--mode', type=int, default=0)
     
     args = parser.parse_args()
 
@@ -190,6 +208,7 @@ def main():
     noise = args.noise
     norm = args.norm
     delta = args.delta
+    mode = args.mode
     train_shadow = args.train_shadow
     TARGET_ROOT = "./demoloader/trained_model/"
     if not os.path.exists(TARGET_ROOT):
@@ -204,7 +223,7 @@ def main():
 
     # membership inference
     if args.attack_type == 0:
-        test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model, train_shadow, use_DP, noise, norm, delta)
+        test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model, train_shadow, use_DP, noise, norm, delta, mode)
 
     # model inversion
     elif args.attack_type == 1:

@@ -244,7 +244,7 @@ class attack_for_blackbox():
         # final_inputs = torch.cat((results, prediction), 1)
         # print(final_inputs.shape)
 
-        return output, prediction
+        return output, prediction.unsqueeze(-1)
 
     def prepare_dataset(self):
         with open(self.ATTACK_SETS + "train.p", "wb") as f:
