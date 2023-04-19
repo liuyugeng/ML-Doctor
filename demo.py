@@ -73,7 +73,7 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
         loss = nn.CrossEntropyLoss()
         optimizer = optim.SGD(shadow_model.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-4)
         train_shadow_model(PATH, device, shadow_model, shadow_trainloader, shadow_testloader, use_DP, noise, norm, loss, optimizer, delta)
-    if mode == 2 or mode == 3:
+    if mode == 0 or mode == 3:
         attack_trainloader, attack_testloader = get_attack_dataset_with_shadow(
             target_train, target_test, shadow_train, shadow_test, batch_size)
     else:
