@@ -102,7 +102,7 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, shadow_tra
         attack_mode3(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, 
             attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
     else:
-        exit("wrong mode!!!")
+        raise Exception("Wrong mode")
     
     # attack_mode0(PATH + "_target.pth", PATH + "_shadow.pth", PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, 1, num_classes)
     # attack_mode1(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, 1, num_classes)
