@@ -87,9 +87,9 @@ class shadow():
             correct += predicted.eq(targets).sum().item()
 
         if self.use_DP:
-            epsilon, best_alpha = self.privacy_engine.accountant.get_privacy_spent(delta=self.delta)
+            epsilon = self.privacy_engine.accountant.get_epsilon(delta=self.delta)
             # epsilon, best_alpha = self.optimizer.privacy_engine.get_privacy_spent(1e-5)
-            print("\u03B1: %.3f \u03B5: %.3f \u03B4: 1e-5" % (best_alpha, epsilon))
+            print("\u03B5: %.3f \u03B4: 1e-5" % (epsilon))
                 
         self.scheduler.step()
 
