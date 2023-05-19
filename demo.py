@@ -249,6 +249,9 @@ def main():
 
     # attribut inference
     elif args.attack_type == 2:
+        # check num_classes type , redefine the num_classes
+        if not isinstance(num_classes, int):
+            num_classes = num_classes[1]
         test_attrinf(TARGET_PATH, device, num_classes, target_train, target_test, target_model)
 
     # model stealing
