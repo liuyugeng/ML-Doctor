@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+
 class Generator(nn.Module):
     def __init__(self, ngpu=1, nc=3, nz=100, ngf=64):
         super(Generator, self).__init__()

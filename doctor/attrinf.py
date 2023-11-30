@@ -6,6 +6,7 @@ import torch.optim as optim
 from utils.define_models import *
 from sklearn.metrics import f1_score
 
+
 class attack_training():
     def __init__(self, device, attack_trainloader, attack_testloader, target_model, TARGET_PATH, ATTACK_PATH):
         self.device = device
@@ -29,6 +30,7 @@ class attack_training():
     def _get_activation(self, name, activation):
         def hook(model, input, output):
             activation[name] = output.detach()
+
         return hook
 
     def init_attack_model(self, size, output_classes):
@@ -56,13 +58,13 @@ class attack_training():
         out = {}
         var[int(name[1])].register_forward_hook(self._get_activation(name[1], out))
         _ = self.target_model(x)
-        
+
         return out[name[1]]
 
     # Training
     def train(self, epoch):
         self.attack_model.train()
-        
+
         train_loss = 0
         correct = 0
         total = 0
@@ -71,8 +73,8 @@ class attack_training():
         final_gndtrth = []
         final_predict = []
         final_probabe = []
-        
-        for batch_idx, (inputs, [_, targets]) in enumerate(self.attack_trainloader):
+
+        for batch_idx, (inputs, targets) in enumerate(self.attack_trainloader):
             inputs, targets = inputs.to(self.device), targets.to(self.device)
             self.optimizer.zero_grad()
             oracles = self.get_middle_output(inputs)
@@ -87,11 +89,11 @@ class attack_training():
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
-            
+
             if epoch:
-                    final_gndtrth.append(targets)
-                    final_predict.append(predicted)
-                    final_probabe.append(outputs[:, 1])
+                final_gndtrth.append(targets)
+                final_predict.append(predicted)
+                final_probabe.append(outputs[:, 1])
 
         if epoch:
             final_gndtrth = torch.cat(final_gndtrth, dim=0).cpu().detach().numpy()
@@ -108,8 +110,8 @@ class attack_training():
             print("Saved Attack Test Ground Truth and Predict Sets")
             print("Test F1: %f" % (test_f1_score))
 
-        final_result.append(1.*correct/total)
-        print( 'Test Acc: %.3f%% (%d/%d)' % (100.*correct/(1.0*total), correct, total))
+        final_result.append(1. * correct / total)
+        print('Test Acc: %.3f%% (%d/%d)' % (100. * correct / (1.0 * total), correct, total))
 
         return final_result
 
@@ -124,7 +126,7 @@ class attack_training():
         final_probabe = []
 
         with torch.no_grad():
-            for inputs, [_, targets] in self.attack_testloader:
+            for inputs, targets in self.attack_testloader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 oracles = self.get_middle_output(inputs)
                 outputs = self.attack_model(oracles)
@@ -154,21 +156,22 @@ class attack_training():
             print("Saved Attack Test Ground Truth and Predict Sets")
             print("Test F1: %f" % (test_f1_score))
 
-        final_result.append(1.*correct/total)
-        print( 'Test Acc: %.3f%% (%d/%d)' % (100.*correct/(1.0*total), correct, total))
+        final_result.append(1. * correct / total)
+        print('Test Acc: %.3f%% (%d/%d)' % (100. * correct / (1.0 * total), correct, total))
 
         return final_result
 
     def saveModel(self):
         torch.save(self.attack_model.state_dict(), self.ATTACK_PATH + "_attrinf_attack_model.pth")
 
+
 def train_attack_model(TARGET_PATH, ATTACK_PATH, output_classes, device, target_model, train_loader, test_loader, size):
     attack = attack_training(device, train_loader, test_loader, target_model, TARGET_PATH, ATTACK_PATH)
     attack.init_attack_model(size, output_classes)
 
     for epoch in range(100):
-        flag = 1 if epoch==99 else 0
-        print("<======================= Epoch " + str(epoch+1) + " =======================>")
+        flag = 1 if epoch == 99 else 0
+        print("<======================= Epoch " + str(epoch + 1) + " =======================>")
         print("attack training")
         acc_train = attack.train(flag)
         print("attack testing")
@@ -177,6 +180,5 @@ def train_attack_model(TARGET_PATH, ATTACK_PATH, output_classes, device, target_
     attack.saveModel()
     print("Saved Attack Model")
     print("Finished!!!")
-
 
     return acc_train, acc_test
