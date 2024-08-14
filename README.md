@@ -5,7 +5,7 @@
 
 This is the demo code for our USENIX Security 22 paper [ML-Doctor: Holistic Risk Assessment of Inference Attacks Against Machine Learning Models](https://www.usenix.org/conference/usenixsecurity22/presentation/liu-yugeng)
 
-Please find the updated version in our lab's [repo](https://github.com/TrustAIRLab/ML-Doctor)
+Please find the updated version in our lab's [repo](https://github.com/TrustAIRLab/ML-Doctor).
 
 ## Building Datasets
 We prefer the users could provide the dataloader by themselves. But we show the demo dataloader in the code. Due to the size of the dataset, we won't upload it to github.
